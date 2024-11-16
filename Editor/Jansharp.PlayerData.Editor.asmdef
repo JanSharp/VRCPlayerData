@@ -1,0 +1,27 @@
+{
+    "name": "Jansharp.PlayerData.Editor",
+    "rootNamespace": "",
+    "references": [
+        "JanSharp.PlayerData",
+        "JanSharp.Common",
+        "JanSharp.Common.Editor",
+        "JanSharp.Lockstep",
+        "JanSharp.Lockstep.Editor",
+        "UdonSharp.Runtime",
+        "UdonSharp.Editor",
+        "VRC.SDK3",
+        "VRC.SDKBase",
+        "VRC.Udon"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
