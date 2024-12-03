@@ -11,12 +11,20 @@ namespace JanSharp
         [System.NonSerialized] public CorePlayerData corePlayerData;
         [System.NonSerialized] public LockstepAPI lockstep;
 
-        public abstract bool PersistForOfflinePlayer();
-        public virtual void Init() { }
-        public virtual void Uninit() { }
-        public virtual void OnLeft() { }
-        public virtual void OnRejoin() { }
-        public abstract void Serialize();
-        public abstract void Deserialize();
+        public abstract string PlayerDataInternalName { get; }
+        public abstract string PlayerDataDisplayName { get; }
+        public abstract bool PlayerDataSupportsImportExport { get; }
+        public abstract uint PlayerDataVersion { get; }
+        public abstract uint PlayerDataLowestSupportedVersion { get; }
+
+        public abstract bool PersistPlayerDataWhileOffline();
+        public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
+        public abstract void SerializePlayerData(bool isExport);
+        public abstract void DeserializePlayerData(bool isImport, uint importedDataVersion);
+
+        public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }
+        public virtual void OnPlayerDataUninit() { }
+        public virtual void OnPlayerDataLeft() { }
+        public virtual void OnPlayerDataRejoin() { }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 using VRC.SDKBase;
 using VRC.Udon;
 
@@ -10,5 +11,10 @@ namespace JanSharp
     {
         [System.NonSerialized] public uint playerId;
         [System.NonSerialized] public PlayerHealthAndExpData playerData;
+
+        public void UpdateHealthBar()
+        {
+            GetComponentInChildren<Slider>().value = ((float)playerData.health / PlayerHealthAndExpData.MaxHealth);
+        }
     }
 }

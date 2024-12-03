@@ -30,8 +30,15 @@ namespace JanSharp
             localPlayerHead.localRotation = Quaternion.identity;
         }
 
+        private PlayerHealthAndExpData GetPlayerData(uint playerId)
+        {
+            return playerDataManager.GetPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData), playerId);
+        }
+
         private void CreateHitBoxForPlayer(uint playerId)
         {
+            PlayerHealthAndExpData playerData = GetPlayerData(playerId);
+            playerData.manager = this;
             VRCPlayerApi player = VRCPlayerApi.GetPlayerById((int)playerId);
             if (player == null || !player.IsValid())
                 return;
@@ -46,15 +53,11 @@ namespace JanSharp
             constraintSource.weight = 1f;
             constraint.AddSource(constraintSource);
             TestPlayerHitBox hitBox = hitBoxGo.GetComponent<TestPlayerHitBox>();
+            playerData.hitBox = hitBox;
             hitBox.playerId = playerId;
-            hitBox.playerData = playerDataManager.GetPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData), playerId);
-            UpdateHealthBar(hitBox);
+            hitBox.playerData = playerData;
+            hitBox.UpdateHealthBar();
             hitBoxesByPlayerId.Add(playerId, hitBox);
-        }
-
-        private void UpdateHealthBar(TestPlayerHitBox hitBox)
-        {
-            hitBox.GetComponentInChildren<Slider>().value = ((float)hitBox.playerData.health / PlayerHealthAndExpData.MaxHealth);
         }
 
         [LockstepEvent(LockstepEventType.OnInit)]
@@ -112,10 +115,10 @@ namespace JanSharp
             uint playerId = lockstep.ReadSmallUInt();
             if (!lockstep.ClientStateExists(playerId))
                 return;
-            TestPlayerHitBox hitBox = (TestPlayerHitBox)hitBoxesByPlayerId[playerId].Reference;
-            PlayerHealthAndExpData playerData = hitBox.playerData;
+            PlayerHealthAndExpData playerData = GetPlayerData(playerId);
             playerData.health = playerData.health <= 15u ? 0u : (playerData.health - 15u);
-            UpdateHealthBar(hitBox);
+            if (playerData.hitBox != null)
+                playerData.hitBox.UpdateHealthBar();
         }
 
         private void Update()

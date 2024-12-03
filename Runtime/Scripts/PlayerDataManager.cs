@@ -4,6 +4,8 @@ using VRC.SDK3.Data;
 using VRC.SDKBase;
 using VRC.Udon;
 
+// TODO: add persistentId
+
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -12,7 +14,7 @@ namespace JanSharp
     {
         public override string GameStateInternalName => "jansharp.player-data";
         public override string GameStateDisplayName => "Player Data";
-        public override bool GameStateSupportsImportExport => false;
+        public override bool GameStateSupportsImportExport => true;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
 
@@ -21,6 +23,7 @@ namespace JanSharp
 
         private string[] playerDataClassNames = new string[ArrList.MinCapacity];
         private int playerDataClassNamesCount = 0;
+        private DataDictionary classNameIndexesByInternalName = new DataDictionary();
 
         /// <summary>
         /// <para>All players.</para>
@@ -93,7 +96,7 @@ namespace JanSharp
             {
                 PlayerData playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
                 customPlayerData[i] = playerData;
-                playerData.Init();
+                playerData.OnPlayerDataInit(isAboutToBeImported: false);
             }
             return corePlayerData;
         }
@@ -131,12 +134,12 @@ namespace JanSharp
             {
                 PlayerData playerData = customPlayerData[i];
                 if (playerData != null)
-                    playerData.OnRejoin();
+                    playerData.OnPlayerDataRejoin();
                 else
                 {
                     playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
                     customPlayerData[i] = playerData;
-                    playerData.Init();
+                    playerData.OnPlayerDataInit(isAboutToBeImported: false);
                 }
             }
         }
@@ -159,6 +162,26 @@ namespace JanSharp
                 InitializeNewOvershadowedPlayer(playerId, playerData);
         }
 
+        private void InitInternalNameLut()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  InitInternalNameLut");
+            #endif
+            CorePlayerData corePlayerData = allPlayerData[0];
+            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            for (int i = 0; i < playerDataClassNamesCount; i++)
+            {
+                string internalName = customPlayerData[i].PlayerDataInternalName;
+                if (classNameIndexesByInternalName.TryGetValue(internalName, out DataToken classNameIndexToken))
+                {
+                    Debug.LogError($"[PlayerData] '{playerDataClassNames[classNameIndexToken.Int]}' and '{playerDataClassNames[i]}' are both "
+                        + $"trying to use '{internalName}' as their PlayerDataInternalName. They must use different internal names.");
+                    continue;
+                }
+                classNameIndexesByInternalName.Add(internalName, i);
+            }
+        }
+
         [LockstepEvent(LockstepEventType.OnInit, Order = -10000)]
         public void OnInit()
         {
@@ -166,6 +189,16 @@ namespace JanSharp
             Debug.Log($"[PlayerData] Manager  OnInit");
             #endif
             InitializePlayer(lockstep.MasterPlayerId);
+            InitInternalNameLut();
+        }
+
+        [LockstepEvent(LockstepEventType.OnClientBeginCatchUp, Order = -10000)]
+        public void OnClientBeginCatchUp()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  OnClientBeginCatchUp");
+            #endif
+            InitInternalNameLut();
         }
 
         [LockstepEvent(LockstepEventType.OnPreClientJoined, Order = -10000)]
@@ -191,13 +224,13 @@ namespace JanSharp
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
-                if (playerData.PersistForOfflinePlayer())
+                if (playerData.PersistPlayerDataWhileOffline())
                 {
                     shouldPersist = true;
-                    playerData.OnLeft();
+                    playerData.OnPlayerDataLeft();
                     continue;
                 }
-                playerData.Uninit();
+                playerData.OnPlayerDataUninit();
                 playerData.Delete();
                 // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
                 // empty reference object.
@@ -229,6 +262,14 @@ namespace JanSharp
 
             if (!corePlayerData.IsOvershadowed && newlyOvershadowingPlayerData == null)
                 playerDataByName.Remove(corePlayerData.displayName);
+            DeleteCorePlayerData(corePlayerData);
+        }
+
+        private void DeleteCorePlayerData(CorePlayerData corePlayerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  DeleteCorePlayerData");
+            #endif
             int index = corePlayerData.index;
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
@@ -268,16 +309,17 @@ namespace JanSharp
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  SerializeCustomPlayerData");
             #endif
-            playerData.Serialize();
+            playerData.SerializePlayerData(isExport: false);
         }
 
-        private PlayerData DeserializeCustomPlayerData(string className, CorePlayerData corePlayerData)
+        private PlayerData DeserializeCustomPlayerData(int classNameIndex, CorePlayerData corePlayerData)
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  DeserializeCustomPlayerData");
             #endif
-            PlayerData playerData = NewPlayerData(className, corePlayerData);
-            playerData.Deserialize();
+            PlayerData playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
+            corePlayerData.customPlayerData[classNameIndex] = playerData;
+            playerData.DeserializePlayerData(isImport: false, importedDataVersion: 0u);
             return playerData;
         }
 
@@ -321,11 +363,11 @@ namespace JanSharp
 
             corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
             for (int i = 0; i < playerDataClassNamesCount; i++)
-                corePlayerData.customPlayerData[i] = DeserializeCustomPlayerData(playerDataClassNames[i], corePlayerData);
+                DeserializeCustomPlayerData(i, corePlayerData);
             return corePlayerData;
         }
 
-        private void SerializeAllPlayerData()
+        private void SerializeAllCorePlayerData()
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  SerializeAllPlayerData");
@@ -335,7 +377,7 @@ namespace JanSharp
                 SerializeCorePlayerData(allPlayerData[i]);
         }
 
-        private void DeserializeAllPlayerData()
+        private void DeserializeAllCorePlayerData()
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  DeserializeAllPlayerData");
@@ -350,13 +392,222 @@ namespace JanSharp
                 allPlayerData[i] = DeserializeCorePlayerData(i);
         }
 
+        private uint CountNonOvershadowedPlayerData()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  CountNonOvershadowedPlayerData");
+            #endif
+            uint count = 0;
+            for (int i = 0; i < allPlayerDataCount; i++)
+                if (!allPlayerData[i].IsOvershadowed)
+                    count++;
+            return count;
+        }
+
+        private uint CountPlayerDataSupportingExport(PlayerData[] customPlayerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  CountPlayerDataSupportingExport");
+            #endif
+            uint toExportCount = 0;
+            for (int i = 0; i < playerDataClassNamesCount; i++)
+                if (customPlayerData[i].PlayerDataSupportsImportExport)
+                    toExportCount++;
+            return toExportCount;
+        }
+
+        private void ExportCustomPlayerDataMetadata(PlayerData playerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  ExportCustomPlayerDataMetadata");
+            #endif
+            lockstep.WriteString(playerData.PlayerDataInternalName);
+            lockstep.WriteString(playerData.PlayerDataDisplayName);
+            lockstep.WriteSmallUInt(playerData.PlayerDataVersion);
+        }
+
+        private void ImportCustomPlayerDataMetadata(out string internalName, out string displayName, out uint dataVersion)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  ImportCustomPlayerDataMetadata");
+            #endif
+            internalName = lockstep.ReadString();
+            displayName = lockstep.ReadString();
+            dataVersion = lockstep.ReadSmallUInt();
+        }
+
+        private void ExportCorePlayerData(CorePlayerData corePlayerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  ExportCorePlayerData");
+            #endif
+            if (corePlayerData.IsOvershadowed)
+                return;
+            lockstep.WriteString(corePlayerData.displayName);
+        }
+
+        private CorePlayerData ImportCorePlayerData()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  ImportCorePlayerData");
+            #endif
+            string displayName = lockstep.ReadString();
+            if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
+                return (CorePlayerData)playerDataToken.Reference;
+            CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
+            corePlayerData.displayName = displayName;
+            corePlayerData.isOffline = true;
+            PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
+            corePlayerData.customPlayerData = customPlayerData;
+            corePlayerData.index = allPlayerDataCount;
+            ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
+            playerDataByName.Add(displayName, corePlayerData);
+            return corePlayerData;
+        }
+
+        private void ExportAllCustomPlayerData(int classNameIndex)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  ExportAllCustomPlayerData");
+            #endif
+            for (int i = 0; i < allPlayerDataCount; i++)
+            {
+                CorePlayerData corePlayerData = allPlayerData[i];
+                if (corePlayerData.IsOvershadowed)
+                    continue;
+                PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+                playerData.SerializePlayerData(isExport: true);
+            }
+        }
+
+        private bool TryImportAllCustomPlayerData(string internalName, uint dataVersion, CorePlayerData[] allImportedPlayerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  TryImportAllCustomPlayerData");
+            #endif
+            if (!classNameIndexesByInternalName.TryGetValue(internalName, out DataToken classNameIndexToken))
+                return false;
+
+            int classNameIndex = classNameIndexToken.Int;
+            string className = playerDataClassNames[classNameIndex];
+
+            PlayerData dummyPlayerData = GetDummyCustomPlayerData()[classNameIndex];
+            if (!dummyPlayerData.PlayerDataSupportsImportExport || dummyPlayerData.PlayerDataLowestSupportedVersion > dataVersion)
+                return false;
+
+            int count = allImportedPlayerData.Length;
+            for (int i = 0; i < count; i++)
+            {
+                CorePlayerData corePlayerData = allImportedPlayerData[i];
+                PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+                if (playerData == null)
+                {
+                    playerData = NewPlayerData(className, corePlayerData);
+                    corePlayerData.customPlayerData[classNameIndex] = playerData;
+                    playerData.OnPlayerDataInit(isAboutToBeImported: true);
+                }
+                playerData.DeserializePlayerData(isImport: true, dataVersion);
+                if (corePlayerData.isOffline && !playerData.PersistPlayerDataPostImportWhileOffline())
+                {
+                    playerData.Delete();
+                    // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
+                    // empty reference object.
+                    corePlayerData.customPlayerData[classNameIndex] = null;
+                }
+            }
+
+            return true;
+        }
+
+        private PlayerData[] GetDummyCustomPlayerData()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  GetDummyCustomPlayerData");
+            #endif
+            CorePlayerData corePlayerData = (CorePlayerData)playerDataByPlayerId[lockstep.MasterPlayerId].Reference;
+            return corePlayerData.customPlayerData;
+        }
+
+        private void Export()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  Export");
+            #endif
+            lockstep.WriteSmallUInt(CountNonOvershadowedPlayerData());
+            for (int i = 0; i < allPlayerDataCount; i++)
+                ExportCorePlayerData(allPlayerData[i]);
+
+            PlayerData[] customPlayerData = GetDummyCustomPlayerData();
+
+            lockstep.WriteSmallUInt(CountPlayerDataSupportingExport(customPlayerData));
+            for (int i = 0; i < playerDataClassNamesCount; i++)
+            {
+                PlayerData playerData = customPlayerData[i];
+                if (!playerData.PlayerDataSupportsImportExport)
+                    continue;
+
+                ExportCustomPlayerDataMetadata(playerData);
+
+                int sizePosition = OpenUnknownSizeScope();
+                ExportAllCustomPlayerData(i);
+                CloseUnknownSizeScope(sizePosition);
+            }
+        }
+
+        private void Import(uint importedDataVersion)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  Import");
+            #endif
+            uint importedPlayerDataCount = lockstep.ReadSmallUInt();
+            CorePlayerData[] allImportedPlayerData = new CorePlayerData[importedPlayerDataCount];
+            for (int i = 0; i < importedPlayerDataCount; i++)
+                allImportedPlayerData[i] = ImportCorePlayerData();
+
+            uint playerDataCount = lockstep.ReadSmallUInt();
+            for (int i = 0; i < playerDataCount; i++)
+            {
+                ImportCustomPlayerDataMetadata(out string internalName, out string displayName, out uint dataVersion);
+
+                int customDataSize = lockstep.ReadInt();
+                if (!TryImportAllCustomPlayerData(internalName, dataVersion, allImportedPlayerData))
+                    lockstep.ReadBytes(customDataSize, skip: true);
+            }
+
+            CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+        }
+
+        private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  CleanUpEmptyImportedCorePlayerData");
+            #endif
+            int count = allImportedPlayerData.Length;
+            for (int i = count - 1; i >= 0 ; i--)
+            {
+                CorePlayerData corePlayerData = allImportedPlayerData[i];
+                if (!corePlayerData.isOffline) // Non offline players always have all custom player data.
+                    continue;
+                foreach (PlayerData playerData in corePlayerData.customPlayerData)
+                    if (playerData != null)
+                        continue;
+                playerDataByName.Remove(corePlayerData.displayName);
+                DeleteCorePlayerData(corePlayerData);
+            }
+        }
+
         public override void SerializeGameState(bool isExport)
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  SerializeGameState");
             #endif
-            SerializeExpectedPlayerDataClassNames();
-            SerializeAllPlayerData();
+            if (isExport)
+                Export();
+            else
+            {
+                SerializeExpectedPlayerDataClassNames();
+                SerializeAllCorePlayerData();
+            }
         }
 
         public override string DeserializeGameState(bool isImport, uint importedDataVersion)
@@ -364,10 +615,36 @@ namespace JanSharp
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  DeserializeGameState");
             #endif
-            if (!ValidatePlayerDataClassNames(out string errorMessage))
-                return errorMessage;
-            DeserializeAllPlayerData();
+            if (isImport)
+                Import(importedDataVersion);
+            else
+            {
+                if (!ValidatePlayerDataClassNames(out string errorMessage))
+                    return errorMessage;
+                DeserializeAllCorePlayerData();
+            }
             return null;
+        }
+
+        private int OpenUnknownSizeScope()
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  OpenUnknownSizeScope");
+            #endif
+            int sizePosition = lockstep.WriteStreamPosition;
+            lockstep.WriteStreamPosition += 4;
+            return sizePosition;
+        }
+
+        private void CloseUnknownSizeScope(int sizePosition)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  CloseUnknownSizeScope");
+            #endif
+            int stopPosition = lockstep.WriteStreamPosition;
+            lockstep.WriteStreamPosition = sizePosition;
+            lockstep.WriteInt(stopPosition - sizePosition - 4);
+            lockstep.WriteStreamPosition = stopPosition;
         }
 
         #endregion
