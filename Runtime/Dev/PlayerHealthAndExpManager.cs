@@ -1,7 +1,6 @@
 ﻿using UdonSharp;
 using UnityEngine;
 using UnityEngine.Animations;
-using UnityEngine.UI;
 using VRC.SDK3.Data;
 using VRC.SDKBase;
 using VRC.Udon;
@@ -39,8 +38,8 @@ namespace JanSharp
         {
             PlayerHealthAndExpData playerData = GetPlayerData(playerId);
             playerData.manager = this;
-            VRCPlayerApi player = VRCPlayerApi.GetPlayerById((int)playerId);
-            if (player == null || !player.IsValid())
+            VRCPlayerApi player = playerData.PlayerApi;
+            if (player == null)
                 return;
             GameObject hitBoxGo = Instantiate(hitBoxPrefab);
             Transform hitBoxTransform = hitBoxGo.transform;
@@ -128,7 +127,7 @@ namespace JanSharp
 
             if (Input.GetKeyDown(KeyCode.F))
                 foreach (PlayerHealthAndExpData playerData in playerDataManager.GetAllPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData)))
-                    Debug.Log($"<dlt> {playerData.corePlayerData.displayName} (isOffline: {playerData.corePlayerData.isOffline}): health: {playerData.health}, exp: {playerData.exp}");
+                    Debug.Log($"<dlt> {playerData.DisplayName} (isOffline: {playerData.IsOffline}): health: {playerData.health}, exp: {playerData.exp}");
         }
     }
 }

@@ -10,6 +10,7 @@ namespace JanSharp
     {
         [System.NonSerialized] public int index;
         [System.NonSerialized] public uint playerId;
+        [System.NonSerialized] public VRCPlayerApi playerApi;
         [System.NonSerialized] public string displayName;
         [System.NonSerialized] public bool isOffline;
         [System.NonSerialized] public CorePlayerData overshadowingPlayerData;

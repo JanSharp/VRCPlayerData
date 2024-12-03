@@ -87,6 +87,7 @@ namespace JanSharp
             #endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
             corePlayerData.playerId = playerId;
+            corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
             corePlayerData.displayName = displayName;
             PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
             corePlayerData.customPlayerData = customPlayerData;
