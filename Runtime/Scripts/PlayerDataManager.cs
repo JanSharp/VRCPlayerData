@@ -4,8 +4,6 @@ using VRC.SDK3.Data;
 using VRC.SDKBase;
 using VRC.Udon;
 
-// TODO: add persistentId
-
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -26,10 +24,18 @@ namespace JanSharp
         private DataDictionary classNameIndexesByInternalName = new DataDictionary();
 
         /// <summary>
+        /// <para><c>0u</c> is an invalid id.</para>
+        /// </summary>
+        private uint nextPersistentId = 1u;
+        /// <summary>
         /// <para>All players.</para>
         /// </summary>
         private CorePlayerData[] allPlayerData = new CorePlayerData[ArrList.MinCapacity];
         private int allPlayerDataCount = 0;
+        /// <summary>
+        /// <para>All players.</para>
+        /// </summary>
+        private DataDictionary playerDataByPersistentId = new DataDictionary();
         /// <summary>
         /// <para>All non overshadowed players.</para>
         /// </summary>
@@ -38,6 +44,12 @@ namespace JanSharp
         /// <para>All online players.</para>
         /// </summary>
         private DataDictionary playerDataByPlayerId = new DataDictionary();
+
+        /// <summary>
+        /// <para>Only used during imports to allow other systems to remap imported persistent ids to current
+        /// persistent ids.</para>
+        /// </summary>
+        private DataDictionary persistentIdByImportedPersistentId = new DataDictionary();
 
         public void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
@@ -53,9 +65,32 @@ namespace JanSharp
             ArrList.Insert(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName, index);
         }
 
-        public PlayerData GetPlayerDataDynamic(string playerDataClassName, uint playerId)
+        public CorePlayerData GetCorePlayerDataByPlayerId(uint playerId)
+        {
+            return (CorePlayerData)playerDataByPlayerId[playerId].Reference;
+        }
+
+        public CorePlayerData GetCorePlayerDataByPersistentId(uint persistentId)
+        {
+            return (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
+        }
+
+        public PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
         {
             CorePlayerData corePlayerData = (CorePlayerData)playerDataByPlayerId[playerId].Reference;
+            int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
+            return corePlayerData.customPlayerData[classIndex];
+        }
+
+        public PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint playerId)
+        {
+            CorePlayerData corePlayerData = (CorePlayerData)playerDataByPersistentId[playerId].Reference;
+            int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
+            return corePlayerData.customPlayerData[classIndex];
+        }
+
+        public PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
+        {
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             return corePlayerData.customPlayerData[classIndex];
         }
@@ -86,6 +121,8 @@ namespace JanSharp
             Debug.Log($"[PlayerData] Manager  CreateNewCorePlayerData");
             #endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
+            corePlayerData.manager = this;
+            corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
             corePlayerData.displayName = displayName;
@@ -93,6 +130,7 @@ namespace JanSharp
             corePlayerData.customPlayerData = customPlayerData;
             corePlayerData.index = allPlayerDataCount;
             ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
+            playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
@@ -271,6 +309,7 @@ namespace JanSharp
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  DeleteCorePlayerData");
             #endif
+            playerDataByPersistentId.Remove(corePlayerData.persistentId);
             int index = corePlayerData.index;
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
@@ -330,6 +369,7 @@ namespace JanSharp
             Debug.Log($"[PlayerData] Manager  SerializeCorePlayerData");
             #endif
             lockstep.WriteSmallUInt(corePlayerData.playerId);
+            lockstep.WriteSmallUInt(corePlayerData.persistentId);
 
             int flags = (corePlayerData.isOffline ? 1 : 0)
                 | (corePlayerData.IsOvershadowed ? 2 : 0);
@@ -349,10 +389,12 @@ namespace JanSharp
             Debug.Log($"[PlayerData] Manager  DeserializeCorePlayerData");
             #endif
             CorePlayerData corePlayerData = allPlayerData[index];
+            corePlayerData.manager = this;
             corePlayerData.index = index;
             uint playerId = lockstep.ReadSmallUInt();
             playerDataByPlayerId.Add(playerId, corePlayerData);
             corePlayerData.playerId = playerId;
+            corePlayerData.persistentId = lockstep.ReadSmallUInt();
 
             int flags = lockstep.ReadByte();
             corePlayerData.isOffline = (flags & 1) != 0;
@@ -444,6 +486,7 @@ namespace JanSharp
             #endif
             if (corePlayerData.IsOvershadowed)
                 return;
+            lockstep.WriteSmallUInt(corePlayerData.persistentId);
             lockstep.WriteString(corePlayerData.displayName);
         }
 
@@ -452,16 +495,32 @@ namespace JanSharp
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  ImportCorePlayerData");
             #endif
+            uint importedPersistentId = lockstep.ReadSmallUInt();
             string displayName = lockstep.ReadString();
+            CorePlayerData corePlayerData = GetOrCreateCorePlayerDataForImport(displayName);
+            corePlayerData.importedPersistentId = importedPersistentId;
+            persistentIdByImportedPersistentId.Add(importedPersistentId, corePlayerData.persistentId);
+            return corePlayerData;
+        }
+
+        private CorePlayerData GetOrCreateCorePlayerDataForImport(string displayName)
+        {
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerData] Manager  GetOrCreateCorePlayerDataForImport");
+            #endif
             if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
                 return (CorePlayerData)playerDataToken.Reference;
+
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
+            corePlayerData.manager = this;
+            corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.displayName = displayName;
             corePlayerData.isOffline = true;
             PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
             corePlayerData.customPlayerData = customPlayerData;
             corePlayerData.index = allPlayerDataCount;
             ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
+            playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
             playerDataByName.Add(displayName, corePlayerData);
             return corePlayerData;
         }
@@ -576,6 +635,7 @@ namespace JanSharp
             }
 
             CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+            persistentIdByImportedPersistentId.Clear();
         }
 
         private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
@@ -597,6 +657,11 @@ namespace JanSharp
             }
         }
 
+        public uint GetPersistentIdFromImportedId(uint importedPersistentId)
+        {
+            return persistentIdByImportedPersistentId[importedPersistentId].UInt;
+        }
+
         public override void SerializeGameState(bool isExport)
         {
             #if PlayerDataDebug
@@ -607,6 +672,7 @@ namespace JanSharp
             else
             {
                 SerializeExpectedPlayerDataClassNames();
+                lockstep.WriteSmallUInt(nextPersistentId);
                 SerializeAllCorePlayerData();
             }
         }
@@ -622,6 +688,7 @@ namespace JanSharp
             {
                 if (!ValidatePlayerDataClassNames(out string errorMessage))
                     return errorMessage;
+                nextPersistentId = lockstep.ReadSmallUInt();
                 DeserializeAllCorePlayerData();
             }
             return null;
@@ -659,10 +726,22 @@ namespace JanSharp
             manager.RegisterCustomPlayerDataDynamic(playerDataClassName);
         }
 
-        public static T GetPlayerData<T>(this PlayerDataManager manager, string playerDataClassName, uint playerId)
+        public static T GetPlayerDataForPlayerId<T>(this PlayerDataManager manager, string playerDataClassName, uint playerId)
             where T : PlayerData
         {
-            return (T)manager.GetPlayerDataDynamic(playerDataClassName, playerId);
+            return (T)manager.GetPlayerDataForPlayerIdDynamic(playerDataClassName, playerId);
+        }
+
+        public static T GetPlayerDataForPersistentId<T>(this PlayerDataManager manager, string playerDataClassName, uint persistentId)
+            where T : PlayerData
+        {
+            return (T)manager.GetPlayerDataForPersistentIdDynamic(playerDataClassName, persistentId);
+        }
+
+        public static T GetPlayerDataFromCore<T>(this PlayerDataManager manager, string playerDataClassName, CorePlayerData corePlayerData)
+            where T : PlayerData
+        {
+            return (T)manager.GetPlayerDataFromCoreDynamic(playerDataClassName, corePlayerData);
         }
 
         public static T[] GetAllPlayerData<T>(this PlayerDataManager manager, string playerDataClassName)

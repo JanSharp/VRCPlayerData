@@ -11,6 +11,8 @@ namespace JanSharp
         [System.NonSerialized] public CorePlayerData corePlayerData;
         [System.NonSerialized] public LockstepAPI lockstep;
 
+        public uint PersistentId => corePlayerData.persistentId;
+        public uint ImportedPersistentId => corePlayerData.importedPersistentId;
         public uint PlayerId => corePlayerData.playerId;
         public VRCPlayerApi PlayerApi
         {

@@ -31,7 +31,7 @@ namespace JanSharp
 
         private PlayerHealthAndExpData GetPlayerData(uint playerId)
         {
-            return playerDataManager.GetPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData), playerId);
+            return playerDataManager.GetPlayerDataForPlayerId<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData), playerId);
         }
 
         private void CreateHitBoxForPlayer(uint playerId)
