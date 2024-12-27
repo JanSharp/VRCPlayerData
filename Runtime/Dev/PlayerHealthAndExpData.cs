@@ -10,9 +10,9 @@ namespace JanSharp
     {
         public override string PlayerDataInternalName => "jansharp.player-health-and-exp-data";
         public override string PlayerDataDisplayName => "Player Health And Experience Data";
-        public override bool PlayerDataSupportsImportExport => true;
-        public override uint PlayerDataVersion => 0u;
-        public override uint PlayerDataLowestSupportedVersion => 0u;
+        public override bool SupportsImportExport => true;
+        public override uint DataVersion => 0u;
+        public override uint LowestSupportedDataVersion => 0u;
 
         [System.NonSerialized] public uint health = MaxHealth;
         [System.NonSerialized] public uint exp = 0u;
@@ -26,13 +26,13 @@ namespace JanSharp
             return health != MaxHealth || exp != 0u;
         }
 
-        public override void SerializePlayerData(bool isExport)
+        public override void Serialize(bool isExport)
         {
             lockstep.WriteSmallUInt(health);
             lockstep.WriteSmallUInt(exp);
         }
 
-        public override void DeserializePlayerData(bool isImport, uint importedDataVersion)
+        public override void Deserialize(bool isImport, uint importedDataVersion)
         {
             health = lockstep.ReadSmallUInt();
             exp = lockstep.ReadSmallUInt();

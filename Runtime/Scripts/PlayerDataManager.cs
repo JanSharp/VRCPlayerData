@@ -111,7 +111,6 @@ namespace JanSharp
             #endif
             PlayerData playerData = (PlayerData)wannaBeClasses.NewDynamic(className);
             playerData.corePlayerData = corePlayerData;
-            playerData.lockstep = lockstep;
             return playerData;
         }
 
@@ -349,7 +348,7 @@ namespace JanSharp
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  SerializeCustomPlayerData");
             #endif
-            playerData.SerializePlayerData(isExport: false);
+            playerData.Serialize(isExport: false);
         }
 
         private PlayerData DeserializeCustomPlayerData(int classNameIndex, CorePlayerData corePlayerData)
@@ -359,7 +358,7 @@ namespace JanSharp
             #endif
             PlayerData playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
             corePlayerData.customPlayerData[classNameIndex] = playerData;
-            playerData.DeserializePlayerData(isImport: false, importedDataVersion: 0u);
+            playerData.Deserialize(isImport: false, importedDataVersion: 0u);
             return playerData;
         }
 
@@ -454,7 +453,7 @@ namespace JanSharp
             #endif
             uint toExportCount = 0;
             for (int i = 0; i < playerDataClassNamesCount; i++)
-                if (customPlayerData[i].PlayerDataSupportsImportExport)
+                if (customPlayerData[i].SupportsImportExport)
                     toExportCount++;
             return toExportCount;
         }
@@ -466,7 +465,7 @@ namespace JanSharp
             #endif
             lockstep.WriteString(playerData.PlayerDataInternalName);
             lockstep.WriteString(playerData.PlayerDataDisplayName);
-            lockstep.WriteSmallUInt(playerData.PlayerDataVersion);
+            lockstep.WriteSmallUInt(playerData.DataVersion);
         }
 
         private void ImportCustomPlayerDataMetadata(out string internalName, out string displayName, out uint dataVersion)
@@ -536,7 +535,7 @@ namespace JanSharp
                 if (corePlayerData.IsOvershadowed)
                     continue;
                 PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
-                playerData.SerializePlayerData(isExport: true);
+                playerData.Serialize(isExport: true);
             }
         }
 
@@ -552,7 +551,7 @@ namespace JanSharp
             string className = playerDataClassNames[classNameIndex];
 
             PlayerData dummyPlayerData = GetDummyCustomPlayerData()[classNameIndex];
-            if (!dummyPlayerData.PlayerDataSupportsImportExport || dummyPlayerData.PlayerDataLowestSupportedVersion > dataVersion)
+            if (!dummyPlayerData.SupportsImportExport || dummyPlayerData.LowestSupportedDataVersion > dataVersion)
                 return false;
 
             int count = allImportedPlayerData.Length;
@@ -566,7 +565,7 @@ namespace JanSharp
                     corePlayerData.customPlayerData[classNameIndex] = playerData;
                     playerData.OnPlayerDataInit(isAboutToBeImported: true);
                 }
-                playerData.DeserializePlayerData(isImport: true, dataVersion);
+                playerData.Deserialize(isImport: true, dataVersion);
                 if (corePlayerData.isOffline && !playerData.PersistPlayerDataPostImportWhileOffline())
                 {
                     playerData.Delete();
@@ -603,7 +602,7 @@ namespace JanSharp
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
-                if (!playerData.PlayerDataSupportsImportExport)
+                if (!playerData.SupportsImportExport)
                     continue;
 
                 ExportCustomPlayerDataMetadata(playerData);
