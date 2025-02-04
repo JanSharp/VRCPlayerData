@@ -15,8 +15,9 @@ namespace JanSharp
         public override bool GameStateSupportsImportExport => true;
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
+        public override LockstepGameStateOptionsUI ExportUI => null;
+        public override LockstepGameStateOptionsUI ImportUI => null;
 
-        [HideInInspector] [SerializeField] [SingletonReference] private LockstepAPI lockstep;
         [HideInInspector] [SerializeField] [SingletonReference] private WannaBeClassesManager wannaBeClasses;
 
         private string[] playerDataClassNames = new string[ArrList.MinCapacity];
@@ -370,9 +371,7 @@ namespace JanSharp
             lockstep.WriteSmallUInt(corePlayerData.playerId);
             lockstep.WriteSmallUInt(corePlayerData.persistentId);
 
-            int flags = (corePlayerData.isOffline ? 1 : 0)
-                | (corePlayerData.IsOvershadowed ? 2 : 0);
-            lockstep.WriteByte((byte)flags);
+            lockstep.WriteFlags(corePlayerData.isOffline, corePlayerData.IsOvershadowed);
             if (corePlayerData.isOffline)
                 lockstep.WriteString(corePlayerData.displayName);
             if (corePlayerData.IsOvershadowed)
@@ -395,10 +394,9 @@ namespace JanSharp
             corePlayerData.playerId = playerId;
             corePlayerData.persistentId = lockstep.ReadSmallUInt();
 
-            int flags = lockstep.ReadByte();
-            corePlayerData.isOffline = (flags & 1) != 0;
+            lockstep.ReadFlags(out corePlayerData.isOffline, out bool isOvershadowed);
             corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
-            if ((flags & 2) != 0)
+            if (isOvershadowed)
                 corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
             else
                 playerDataByName.Add(corePlayerData.displayName, corePlayerData);
@@ -661,7 +659,7 @@ namespace JanSharp
             return persistentIdByImportedPersistentId[importedPersistentId].UInt;
         }
 
-        public override void SerializeGameState(bool isExport)
+        public override void SerializeGameState(bool isExport, LockstepGameStateOptionsData exportOptions)
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  SerializeGameState");
@@ -676,7 +674,7 @@ namespace JanSharp
             }
         }
 
-        public override string DeserializeGameState(bool isImport, uint importedDataVersion)
+        public override string DeserializeGameState(bool isImport, uint importedDataVersion, LockstepGameStateOptionsData importOptions)
         {
             #if PlayerDataDebug
             Debug.Log($"[PlayerData] Manager  DeserializeGameState");
