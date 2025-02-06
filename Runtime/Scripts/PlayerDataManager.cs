@@ -7,7 +7,7 @@ using VRC.Udon;
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    [SingletonScript]
+    [SingletonScript("28a5e083347ce2753aa92dfda01bef32")] // Runtime/Prefabs/PlayerDataManager.prefab
     public class PlayerDataManager : LockstepGameState
     {
         public override string GameStateInternalName => "jansharp.player-data";
