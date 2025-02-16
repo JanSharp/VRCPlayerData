@@ -41,7 +41,14 @@ namespace JanSharp
             VRCPlayerApi player = playerData.PlayerApi;
             if (player == null)
                 return;
+            #if PlayerDataDebug
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            #endif
             GameObject hitBoxGo = Instantiate(hitBoxPrefab);
+            #if PlayerDataDebug
+            Debug.Log($"[PlayerDataDebug] [sw] PlayerHealthAndExpManager  CreateHitBoxForPlayer (inner) - instantiateMs: {sw.Elapsed.TotalMilliseconds}");
+            #endif
             Transform hitBoxTransform = hitBoxGo.transform;
             boneAttachmentManager.AttachToBone(player, HumanBodyBones.Head, hitBoxTransform);
             hitBoxTransform.localPosition = Vector3.up * 0.125f;
