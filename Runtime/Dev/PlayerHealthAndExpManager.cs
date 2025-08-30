@@ -10,9 +10,9 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class PlayerHealthAndExpManager : UdonSharpBehaviour
     {
-        [HideInInspector] [SerializeField] [SingletonReference] private PlayerDataManager playerDataManager;
-        [HideInInspector] [SerializeField] [SingletonReference] private BoneAttachmentManager boneAttachmentManager;
-        [HideInInspector] [SerializeField] [SingletonReference] private LockstepAPI lockstep;
+        [HideInInspector][SerializeField][SingletonReference] private PlayerDataManager playerDataManager;
+        [HideInInspector][SerializeField][SingletonReference] private BoneAttachmentManager boneAttachmentManager;
+        [HideInInspector][SerializeField][SingletonReference] private LockstepAPI lockstep;
 
         public GameObject hitBoxPrefab;
         public LayerMask shootingLayerMask;
@@ -41,14 +41,14 @@ namespace JanSharp
             VRCPlayerApi player = playerData.PlayerApi;
             if (player == null)
                 return;
-            #if PlayerDataDebug
+#if PLAYER_DATA_DEBUG
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
-            #endif
+#endif
             GameObject hitBoxGo = Instantiate(hitBoxPrefab);
-            #if PlayerDataDebug
+#if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] [sw] PlayerHealthAndExpManager  CreateHitBoxForPlayer (inner) - instantiateMs: {sw.Elapsed.TotalMilliseconds}");
-            #endif
+#endif
             Transform hitBoxTransform = hitBoxGo.transform;
             boneAttachmentManager.AttachToBone(player, HumanBodyBones.Head, hitBoxTransform);
             hitBoxTransform.localPosition = Vector3.up * 0.125f;
@@ -114,7 +114,7 @@ namespace JanSharp
             lockstep.SendInputAction(onPlayerGotShotIAId);
         }
 
-        [HideInInspector] [SerializeField] private uint onPlayerGotShotIAId;
+        [HideInInspector][SerializeField] private uint onPlayerGotShotIAId;
         [LockstepInputAction(nameof(onPlayerGotShotIAId))]
         public void OnPlayerGotShotIA()
         {
