@@ -69,6 +69,13 @@ namespace JanSharp
         /// </summary>
         private DataDictionary persistentIdByImportedPersistentId = new DataDictionary();
 
+        private const long MaxWorkMSPerFrame = 5L;
+        private System.Diagnostics.Stopwatch deSerializationSw = new System.Diagnostics.Stopwatch();
+        private int suspendedIndexInCorePlayerDataArray;
+        private int suspendedIndexInCustomPlayerDataArray;
+        private bool suspendedInCustomPlayerData;
+        private int deserializationStage = 0;
+
         public void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
@@ -321,6 +328,14 @@ namespace JanSharp
 
         #region Serialization
 
+        private bool DeSerializationIsRunningLong()
+        {
+            bool result = deSerializationSw.ElapsedMilliseconds > MaxWorkMSPerFrame;
+            if (result)
+                lockstep.FlagToContinueNextFrame();
+            return result;
+        }
+
         private void SerializeExpectedPlayerDataClassNames()
         {
 #if PLAYER_DATA_DEBUG
@@ -355,15 +370,19 @@ namespace JanSharp
             playerData.Serialize(isExport: false);
         }
 
-        private PlayerData DeserializeCustomPlayerData(int classNameIndex, CorePlayerData corePlayerData)
+        private void DeserializeCustomPlayerData(CorePlayerData corePlayerData, int classNameIndex)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  DeserializeCustomPlayerData");
 #endif
-            PlayerData playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
-            corePlayerData.customPlayerData[classNameIndex] = playerData;
+            PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+            if (playerData == null)
+            {
+                // Doesn't unconditionally create a new one as this might be a continuation from prev frame.
+                playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
+                corePlayerData.customPlayerData[classNameIndex] = playerData;
+            }
             playerData.Deserialize(isImport: false, importedDataVersion: 0u);
-            return playerData;
         }
 
         private void SerializeCorePlayerData(CorePlayerData corePlayerData)
@@ -371,68 +390,145 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  SerializeCorePlayerData");
 #endif
-            lockstep.WriteSmallUInt(corePlayerData.playerId);
-            lockstep.WriteSmallUInt(corePlayerData.persistentId);
+            if (suspendedInCustomPlayerData)
+                suspendedInCustomPlayerData = false;
+            else
+            {
+                lockstep.WriteSmallUInt(corePlayerData.playerId);
+                lockstep.WriteSmallUInt(corePlayerData.persistentId);
 
-            lockstep.WriteFlags(corePlayerData.isOffline, corePlayerData.IsOvershadowed);
-            if (corePlayerData.isOffline)
-                lockstep.WriteString(corePlayerData.displayName);
-            if (corePlayerData.IsOvershadowed)
-                lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
+                lockstep.WriteFlags(corePlayerData.isOffline, corePlayerData.IsOvershadowed);
+                if (corePlayerData.isOffline)
+                    lockstep.WriteString(corePlayerData.displayName);
+                if (corePlayerData.IsOvershadowed)
+                    lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
+            }
 
-            foreach (PlayerData playerData in corePlayerData.customPlayerData)
-                SerializeCustomPlayerData(playerData);
+            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            int length = customPlayerData.Length;
+            while (suspendedIndexInCustomPlayerDataArray < length)
+            {
+                if (DeSerializationIsRunningLong())
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                SerializeCustomPlayerData(customPlayerData[suspendedIndexInCustomPlayerDataArray]);
+                if (lockstep.FlaggedToContinueNextFrame)
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                suspendedIndexInCustomPlayerDataArray++;
+            }
+            suspendedIndexInCustomPlayerDataArray = 0;
         }
 
-        private CorePlayerData DeserializeCorePlayerData(int index)
+        private void DeserializeCorePlayerData(int index)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  DeserializeCorePlayerData");
 #endif
             CorePlayerData corePlayerData = allPlayerData[index];
-            corePlayerData.manager = this;
-            corePlayerData.index = index;
-            uint playerId = lockstep.ReadSmallUInt();
-            playerDataByPlayerId.Add(playerId, corePlayerData);
-            corePlayerData.playerId = playerId;
-            corePlayerData.persistentId = lockstep.ReadSmallUInt();
-
-            lockstep.ReadFlags(out corePlayerData.isOffline, out bool isOvershadowed);
-            corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
-            if (isOvershadowed)
-                corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+            if (suspendedInCustomPlayerData)
+                suspendedInCustomPlayerData = false;
             else
-                playerDataByName.Add(corePlayerData.displayName, corePlayerData);
+            {
+                corePlayerData.manager = this;
+                corePlayerData.index = index;
+                uint playerId = lockstep.ReadSmallUInt();
+                playerDataByPlayerId.Add(playerId, corePlayerData);
+                corePlayerData.playerId = playerId;
+                corePlayerData.persistentId = lockstep.ReadSmallUInt();
 
-            corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
-            for (int i = 0; i < playerDataClassNamesCount; i++)
-                DeserializeCustomPlayerData(i, corePlayerData);
-            return corePlayerData;
+                lockstep.ReadFlags(out corePlayerData.isOffline, out bool isOvershadowed);
+                corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
+                if (isOvershadowed)
+                    corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                else
+                    playerDataByName.Add(corePlayerData.displayName, corePlayerData);
+
+                corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
+            }
+
+            while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
+            {
+                if (DeSerializationIsRunningLong())
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                DeserializeCustomPlayerData(corePlayerData, suspendedIndexInCustomPlayerDataArray);
+                if (lockstep.FlaggedToContinueNextFrame)
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                suspendedIndexInCustomPlayerDataArray++;
+            }
+            suspendedIndexInCustomPlayerDataArray = 0;
         }
 
         private void SerializeAllCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeAllPlayerData");
+            Debug.Log($"[PlayerData] Manager  SerializeAllCorePlayerData");
 #endif
-            lockstep.WriteSmallUInt((uint)allPlayerDataCount);
-            for (int i = 0; i < allPlayerDataCount; i++)
-                SerializeCorePlayerData(allPlayerData[i]);
+            if (!lockstep.IsContinuationFromPrevFrame)
+                lockstep.WriteSmallUInt((uint)allPlayerDataCount);
+            while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+            {
+                if (DeSerializationIsRunningLong())
+                    return;
+                SerializeCorePlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                if (suspendedInCustomPlayerData)
+                    return;
+                suspendedIndexInCorePlayerDataArray++;
+            }
+            suspendedIndexInCorePlayerDataArray = 0;
         }
 
         private void DeserializeAllCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeserializeAllPlayerData");
+            Debug.Log($"[PlayerData] Manager  DeserializeAllCorePlayerData");
 #endif
-            allPlayerDataCount = (int)lockstep.ReadSmallUInt();
-            ArrList.EnsureCapacity(ref allPlayerData, allPlayerDataCount);
-            // Populate with empty instances so overshadowingPlayerData can be assigned immediately in the
-            // deserialization pass.
-            for (int i = 0; i < allPlayerDataCount; i++)
-                allPlayerData[i] = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
-            for (int i = 0; i < allPlayerDataCount; i++)
-                allPlayerData[i] = DeserializeCorePlayerData(i);
+            if (deserializationStage == 0)
+            {
+                allPlayerDataCount = (int)lockstep.ReadSmallUInt();
+                ArrList.EnsureCapacity(ref allPlayerData, allPlayerDataCount);
+                deserializationStage++;
+            }
+
+            if (deserializationStage == 1)
+            {
+                // Populate with empty instances so overshadowingPlayerData can be assigned immediately in the
+                // deserialization pass.
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    allPlayerData[suspendedIndexInCorePlayerDataArray] = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                deserializationStage++;
+            }
+
+            if (deserializationStage == 2)
+            {
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    DeserializeCorePlayerData(suspendedIndexInCorePlayerDataArray);
+                    if (suspendedInCustomPlayerData)
+                        return;
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                deserializationStage = 0;
+            }
         }
 
         private uint CountNonOvershadowedPlayerData()
@@ -593,6 +689,7 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  Export");
 #endif
+            // TODO: spread deserialization out across frames.
             lockstep.WriteSmallUInt(CountNonOvershadowedPlayerData());
             for (int i = 0; i < allPlayerDataCount; i++)
                 ExportCorePlayerData(allPlayerData[i]);
@@ -619,6 +716,7 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  Import");
 #endif
+            // TODO: spread deserialization out across frames.
             uint importedPlayerDataCount = lockstep.ReadSmallUInt();
             CorePlayerData[] allImportedPlayerData = new CorePlayerData[importedPlayerDataCount];
             for (int i = 0; i < importedPlayerDataCount; i++)
@@ -667,15 +765,19 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  SerializeGameState");
 #endif
-            // TODO: spread serialization out across frames.
+            deSerializationSw.Reset();
+            deSerializationSw.Start();
             if (isExport)
+            {
                 Export();
-            else
+                return;
+            }
+            if (!lockstep.IsContinuationFromPrevFrame)
             {
                 SerializeExpectedPlayerDataClassNames();
                 lockstep.WriteSmallUInt(nextPersistentId);
-                SerializeAllCorePlayerData();
             }
+            SerializeAllCorePlayerData();
         }
 
         public override string DeserializeGameState(bool isImport, uint importedDataVersion, LockstepGameStateOptionsData importOptions)
@@ -683,16 +785,20 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  DeserializeGameState");
 #endif
-            // TODO: spread deserialization out across frames.
+            deSerializationSw.Reset();
+            deSerializationSw.Start();
             if (isImport)
+            {
                 Import(importedDataVersion);
-            else
+                return null;
+            }
+            if (!lockstep.IsContinuationFromPrevFrame)
             {
                 if (!ValidatePlayerDataClassNames(out string errorMessage))
                     return errorMessage;
                 nextPersistentId = lockstep.ReadSmallUInt();
-                DeserializeAllCorePlayerData();
             }
+            DeserializeAllCorePlayerData();
             return null;
         }
 
