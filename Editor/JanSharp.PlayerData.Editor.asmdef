@@ -1,5 +1,5 @@
 {
-    "name": "Jansharp.PlayerData.Editor",
+    "name": "JanSharp.PlayerData.Editor",
     "rootNamespace": "",
     "references": [
         "JanSharp.PlayerData",
