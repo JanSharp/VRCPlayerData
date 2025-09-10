@@ -20,9 +20,26 @@ namespace JanSharp
 
         [HideInInspector][SerializeField][SingletonReference] private WannaBeClassesManager wannaBeClasses;
 
+        /// <summary>
+        /// <para>Sorted alphabetically, use binary search.</para>
+        /// </summary>
         private string[] playerDataClassNames = new string[ArrList.MinCapacity];
         private int playerDataClassNamesCount = 0;
-        private DataDictionary classNameIndexesByInternalName = new DataDictionary();
+        /// <summary>
+        /// <para>Sorted associated with <see cref="playerDataClassNames"/>, use index of.</para>
+        /// </summary>
+        private string[] playerDataInternalNames = new string[ArrList.MinCapacity];
+        private int playerDataInternalNamesCount = 0;
+        /// <summary>
+        /// <para>Sorted alphabetically, use binary search.</para>
+        /// <para>Keys are class names.</para>
+        /// </summary>
+        [HideInInspector][SerializeField] private string[] internalNameByClassNameKeys;
+        /// <summary>
+        /// <para>Sorted associated with <see cref="internalNameByClassNameKeys"/>, use index of.</para>
+        /// <para>Values are internal names.</para>
+        /// </summary>
+        [HideInInspector][SerializeField] private string[] internalNameByClassNameValues;
 
         /// <summary>
         /// <para><c>0u</c> is an invalid id.</para>
@@ -63,7 +80,23 @@ namespace JanSharp
                 Debug.LogError($"[PlayerData] Attempt to register the custom player data class name {playerDataClassName} twice.");
                 return;
             }
+            int internalNameLutIndex = System.Array.BinarySearch(internalNameByClassNameKeys, playerDataClassName);
+            if (internalNameLutIndex < 0)
+            {
+                Debug.LogError($"[PlayerData] Attempt to register a custom player data class with the name "
+                    + $"{playerDataClassName}, however there is no such class which derives from the {nameof(PlayerData)} class.");
+                return;
+            }
+            string internalName = internalNameByClassNameValues[internalNameLutIndex];
+            int internalNameIndex = ArrList.IndexOf(ref playerDataInternalNames, ref playerDataInternalNamesCount, internalName);
+            if (internalNameIndex != -1)
+            {
+                Debug.LogError($"[PlayerData] '{playerDataClassNames[internalNameIndex]}' and '{playerDataClassName}' are both "
+                    + $"trying to use '{internalName}' as their PlayerDataInternalName. They must use different internal names.");
+                return;
+            }
             ArrList.Insert(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName, index);
+            ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, playerDataClassName, index);
         }
 
         public CorePlayerData GetCorePlayerDataByPlayerId(uint playerId)
@@ -201,26 +234,6 @@ namespace JanSharp
                 InitializeNewOvershadowedPlayer(playerId, playerData);
         }
 
-        private void InitInternalNameLut() // TODO: initialize this sooner, assisted by editor scripting.
-        {
-#if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  InitInternalNameLut");
-#endif
-            CorePlayerData corePlayerData = allPlayerData[0];
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-            for (int i = 0; i < playerDataClassNamesCount; i++)
-            {
-                string internalName = customPlayerData[i].PlayerDataInternalName;
-                if (classNameIndexesByInternalName.TryGetValue(internalName, out DataToken classNameIndexToken))
-                {
-                    Debug.LogError($"[PlayerData] '{playerDataClassNames[classNameIndexToken.Int]}' and '{playerDataClassNames[i]}' are both "
-                        + $"trying to use '{internalName}' as their PlayerDataInternalName. They must use different internal names.");
-                    continue;
-                }
-                classNameIndexesByInternalName.Add(internalName, i);
-            }
-        }
-
         [LockstepEvent(LockstepEventType.OnInit, Order = -10000)]
         public void OnInit()
         {
@@ -228,16 +241,6 @@ namespace JanSharp
             Debug.Log($"[PlayerData] Manager  OnInit");
 #endif
             InitializePlayer(lockstep.MasterPlayerId);
-            InitInternalNameLut();
-        }
-
-        [LockstepEvent(LockstepEventType.OnClientBeginCatchUp, Order = -10000)]
-        public void OnClientBeginCatchUp()
-        {
-#if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  OnClientBeginCatchUp");
-#endif
-            InitInternalNameLut();
         }
 
         [LockstepEvent(LockstepEventType.OnPreClientJoined, Order = -10000)]
@@ -542,10 +545,9 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  TryImportAllCustomPlayerData");
 #endif
-            if (!classNameIndexesByInternalName.TryGetValue(internalName, out DataToken classNameIndexToken))
+            int classNameIndex = ArrList.IndexOf(ref playerDataInternalNames, ref playerDataInternalNamesCount, internalName);
+            if (classNameIndex == -1)
                 return false;
-
-            int classNameIndex = classNameIndexToken.Int;
             string className = playerDataClassNames[classNameIndex];
 
             PlayerData dummyPlayerData = GetDummyCustomPlayerData()[classNameIndex];
