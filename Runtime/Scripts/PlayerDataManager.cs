@@ -566,6 +566,7 @@ namespace JanSharp
                 playerData.Deserialize(isImport: true, dataVersion);
                 if (corePlayerData.isOffline && !playerData.PersistPlayerDataPostImportWhileOffline())
                 {
+                    playerData.OnPlayerDataUninit();
                     playerData.Delete();
                     // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
                     // empty reference object.
