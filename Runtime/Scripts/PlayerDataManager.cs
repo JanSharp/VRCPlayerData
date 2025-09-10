@@ -75,6 +75,16 @@ namespace JanSharp
         private int suspendedIndexInCustomPlayerDataArray;
         private bool suspendedInCustomPlayerData;
         private int deserializationStage = 0;
+        private int exportStage = 0;
+        private int exportUnknownSizeScopeSizePosition;
+        private int importStage = 0;
+        private CorePlayerData[] allImportedPlayerData;
+        private int importedCustomPlayerDataCount;
+        private string importSuspendedInternalName;
+        private string importSuspendedDisplayName;
+        private uint importSuspendedDataVersion;
+        private int importSuspendedScopeByteSize;
+        private int importSuspendedClassNameIndex;
 
         public void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
@@ -565,14 +575,14 @@ namespace JanSharp
             lockstep.WriteSmallUInt(playerData.DataVersion);
         }
 
-        private void ImportCustomPlayerDataMetadata(out string internalName, out string displayName, out uint dataVersion)
+        private void ImportCustomPlayerDataMetadata()
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  ImportCustomPlayerDataMetadata");
 #endif
-            internalName = lockstep.ReadString();
-            displayName = lockstep.ReadString();
-            dataVersion = lockstep.ReadSmallUInt();
+            importSuspendedInternalName = lockstep.ReadString();
+            importSuspendedDisplayName = lockstep.ReadString();
+            importSuspendedDataVersion = lockstep.ReadSmallUInt();
         }
 
         private void ExportCorePlayerData(CorePlayerData corePlayerData)
@@ -626,51 +636,79 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  ExportAllCustomPlayerData");
 #endif
-            for (int i = 0; i < allPlayerDataCount; i++)
+            while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
             {
-                CorePlayerData corePlayerData = allPlayerData[i];
+                if (DeSerializationIsRunningLong())
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                CorePlayerData corePlayerData = allPlayerData[suspendedIndexInCorePlayerDataArray];
                 if (corePlayerData.IsOvershadowed)
                     continue;
                 PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
                 playerData.Serialize(isExport: true);
+                if (lockstep.FlaggedToContinueNextFrame)
+                {
+                    suspendedInCustomPlayerData = true;
+                    return;
+                }
+                suspendedIndexInCorePlayerDataArray++;
             }
+            suspendedIndexInCorePlayerDataArray = 0;
         }
 
-        private bool TryImportAllCustomPlayerData(string internalName, uint dataVersion, CorePlayerData[] allImportedPlayerData)
+        private bool TryImportAllCustomPlayerData()
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  TryImportAllCustomPlayerData");
 #endif
-            int classNameIndex = ArrList.IndexOf(ref playerDataInternalNames, ref playerDataInternalNamesCount, internalName);
-            if (classNameIndex == -1)
-                return false;
-            string className = playerDataClassNames[classNameIndex];
+            if (suspendedInCustomPlayerData)
+                suspendedInCustomPlayerData = false;
+            else
+            {
+                importSuspendedClassNameIndex = ArrList.IndexOf(ref playerDataInternalNames, ref playerDataInternalNamesCount, importSuspendedInternalName);
+                if (importSuspendedClassNameIndex == -1)
+                    return false;
 
-            PlayerData dummyPlayerData = GetDummyCustomPlayerData()[classNameIndex];
-            if (!dummyPlayerData.SupportsImportExport || dummyPlayerData.LowestSupportedDataVersion > dataVersion)
-                return false;
+                PlayerData dummyPlayerData = GetDummyCustomPlayerData()[importSuspendedClassNameIndex];
+                if (!dummyPlayerData.SupportsImportExport || dummyPlayerData.LowestSupportedDataVersion > importSuspendedDataVersion)
+                    return false;
+            }
 
             int count = allImportedPlayerData.Length;
-            for (int i = 0; i < count; i++)
+            while (suspendedIndexInCorePlayerDataArray < count)
             {
-                CorePlayerData corePlayerData = allImportedPlayerData[i];
-                PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+                if (DeSerializationIsRunningLong())
+                {
+                    suspendedInCustomPlayerData = true;
+                    return false; // Return value does not matter.
+                }
+                CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
+                PlayerData playerData = corePlayerData.customPlayerData[importSuspendedClassNameIndex];
                 if (playerData == null)
                 {
-                    playerData = NewPlayerData(className, corePlayerData);
-                    corePlayerData.customPlayerData[classNameIndex] = playerData;
+                    playerData = NewPlayerData(playerDataClassNames[importSuspendedClassNameIndex], corePlayerData);
+                    corePlayerData.customPlayerData[importSuspendedClassNameIndex] = playerData;
                     playerData.OnPlayerDataInit(isAboutToBeImported: true);
                 }
-                playerData.Deserialize(isImport: true, dataVersion);
+                playerData.Deserialize(isImport: true, importSuspendedDataVersion);
+                if (lockstep.FlaggedToContinueNextFrame)
+                {
+                    suspendedInCustomPlayerData = true;
+                    return false; // Return value does not matter.
+                }
                 if (corePlayerData.isOffline && !playerData.PersistPlayerDataPostImportWhileOffline())
                 {
                     playerData.OnPlayerDataUninit();
                     playerData.Delete();
                     // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
                     // empty reference object.
-                    corePlayerData.customPlayerData[classNameIndex] = null;
+                    corePlayerData.customPlayerData[importSuspendedClassNameIndex] = null;
                 }
+                suspendedIndexInCorePlayerDataArray++;
             }
+            suspendedIndexInCorePlayerDataArray = 0;
 
             return true;
         }
@@ -689,25 +727,55 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  Export");
 #endif
-            // TODO: spread deserialization out across frames.
-            lockstep.WriteSmallUInt(CountNonOvershadowedPlayerData());
-            for (int i = 0; i < allPlayerDataCount; i++)
-                ExportCorePlayerData(allPlayerData[i]);
-
-            PlayerData[] customPlayerData = GetDummyCustomPlayerData();
-
-            lockstep.WriteSmallUInt(CountPlayerDataSupportingExport(customPlayerData));
-            for (int i = 0; i < playerDataClassNamesCount; i++)
+            if (exportStage == 0)
             {
-                PlayerData playerData = customPlayerData[i];
-                if (!playerData.SupportsImportExport)
-                    continue;
+                lockstep.WriteSmallUInt(CountNonOvershadowedPlayerData());
+                exportStage++;
+            }
 
-                ExportCustomPlayerDataMetadata(playerData);
+            if (exportStage == 1)
+            {
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    ExportCorePlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                exportStage++;
+            }
 
-                int sizePosition = OpenUnknownSizeScope();
-                ExportAllCustomPlayerData(i);
-                CloseUnknownSizeScope(sizePosition);
+            if (exportStage == 2)
+            {
+                PlayerData[] customPlayerData = GetDummyCustomPlayerData();
+                lockstep.WriteSmallUInt(CountPlayerDataSupportingExport(customPlayerData));
+                exportStage++;
+            }
+
+            if (exportStage == 3)
+            {
+                PlayerData[] customPlayerData = GetDummyCustomPlayerData();
+                while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    PlayerData playerData = customPlayerData[suspendedIndexInCustomPlayerDataArray];
+                    if (!playerData.SupportsImportExport)
+                        continue;
+                    if (!suspendedInCustomPlayerData)
+                    {
+                        ExportCustomPlayerDataMetadata(playerData);
+                        exportUnknownSizeScopeSizePosition = OpenUnknownSizeScope();
+                    }
+                    ExportAllCustomPlayerData(suspendedIndexInCustomPlayerDataArray);
+                    if (suspendedInCustomPlayerData)
+                        return;
+                    CloseUnknownSizeScope(exportUnknownSizeScopeSizePosition);
+                    suspendedIndexInCustomPlayerDataArray++;
+                }
+                suspendedIndexInCustomPlayerDataArray = 0;
+                exportStage = 0;
             }
         }
 
@@ -716,24 +784,63 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  Import");
 #endif
-            // TODO: spread deserialization out across frames.
-            uint importedPlayerDataCount = lockstep.ReadSmallUInt();
-            CorePlayerData[] allImportedPlayerData = new CorePlayerData[importedPlayerDataCount];
-            for (int i = 0; i < importedPlayerDataCount; i++)
-                allImportedPlayerData[i] = ImportCorePlayerData();
-
-            uint playerDataCount = lockstep.ReadSmallUInt();
-            for (int i = 0; i < playerDataCount; i++)
+            if (importStage == 0)
             {
-                ImportCustomPlayerDataMetadata(out string internalName, out string displayName, out uint dataVersion);
-
-                int customDataSize = lockstep.ReadInt();
-                if (!TryImportAllCustomPlayerData(internalName, dataVersion, allImportedPlayerData))
-                    lockstep.ReadBytes(customDataSize, skip: true);
+                allImportedPlayerData = new CorePlayerData[lockstep.ReadSmallUInt()];
+                importStage++;
             }
 
-            CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
-            persistentIdByImportedPersistentId.Clear();
+            if (importStage == 1)
+            {
+                int length = allImportedPlayerData.Length;
+                while (suspendedIndexInCorePlayerDataArray < length)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    allImportedPlayerData[suspendedIndexInCorePlayerDataArray] = ImportCorePlayerData();
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                importStage++;
+            }
+
+            if (importStage == 2)
+            {
+                importedCustomPlayerDataCount = (int)lockstep.ReadSmallUInt();
+                importStage++;
+            }
+
+            if (importStage == 3)
+            {
+                while (suspendedIndexInCustomPlayerDataArray < importedCustomPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    if (!suspendedInCustomPlayerData)
+                    {
+                        ImportCustomPlayerDataMetadata();
+                        importSuspendedScopeByteSize = lockstep.ReadInt();
+                    }
+                    bool success = TryImportAllCustomPlayerData();
+                    if (suspendedInCustomPlayerData)
+                        return;
+                    if (!success)
+                        lockstep.ReadBytes(importSuspendedScopeByteSize, skip: true);
+                    suspendedIndexInCustomPlayerDataArray++;
+                }
+                suspendedIndexInCustomPlayerDataArray = 0;
+                lockstep.FlagToContinueNextFrame(); // Make cleanup happen in its own frame.
+                importStage++;
+                return;
+            }
+
+            if (importStage == 4)
+            {
+                CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+                allImportedPlayerData = null; // Free memory.
+                persistentIdByImportedPersistentId.Clear();
+                importStage = 0;
+            }
         }
 
         private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
