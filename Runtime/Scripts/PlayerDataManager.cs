@@ -201,7 +201,7 @@ namespace JanSharp
                 InitializeNewOvershadowedPlayer(playerId, playerData);
         }
 
-        private void InitInternalNameLut()
+        private void InitInternalNameLut() // TODO: initialize this sooner, assisted by editor scripting.
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  InitInternalNameLut");
@@ -665,6 +665,7 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  SerializeGameState");
 #endif
+            // TODO: spread serialization out across frames.
             if (isExport)
                 Export();
             else
@@ -680,6 +681,7 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerData] Manager  DeserializeGameState");
 #endif
+            // TODO: spread deserialization out across frames.
             if (isImport)
                 Import(importedDataVersion);
             else
