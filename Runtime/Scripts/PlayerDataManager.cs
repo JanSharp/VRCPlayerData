@@ -116,12 +116,12 @@ namespace JanSharp
             ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, playerDataClassName, index);
         }
 
-        public CorePlayerData GetCorePlayerDataByPlayerId(uint playerId)
+        public CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
         {
             return (CorePlayerData)playerDataByPlayerId[playerId].Reference;
         }
 
-        public CorePlayerData GetCorePlayerDataByPersistentId(uint persistentId)
+        public CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId)
         {
             return (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
         }
