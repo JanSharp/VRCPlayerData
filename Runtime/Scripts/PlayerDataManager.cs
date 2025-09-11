@@ -133,9 +133,9 @@ namespace JanSharp
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint playerId)
+        public PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
         {
-            CorePlayerData corePlayerData = (CorePlayerData)playerDataByPersistentId[playerId].Reference;
+            CorePlayerData corePlayerData = (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             return corePlayerData.customPlayerData[classIndex];
         }
