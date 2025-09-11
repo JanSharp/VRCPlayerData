@@ -838,9 +838,14 @@ namespace JanSharp
             {
                 CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
                 allImportedPlayerData = null; // Free memory.
-                persistentIdByImportedPersistentId.Clear();
                 importStage = 0;
             }
+        }
+
+        [LockstepEvent(LockstepEventType.OnImportFinished)]
+        public void OnImportFinished()
+        {
+            persistentIdByImportedPersistentId.Clear();
         }
 
         private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
