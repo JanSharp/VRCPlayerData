@@ -864,7 +864,9 @@ namespace JanSharp
 
         public uint GetPersistentIdFromImportedId(uint importedPersistentId)
         {
-            return persistentIdByImportedPersistentId[importedPersistentId].UInt;
+            return importedPersistentId == 0u
+                ? 0u
+                : persistentIdByImportedPersistentId[importedPersistentId].UInt;
         }
 
         public override void SerializeGameState(bool isExport, LockstepGameStateOptionsData exportOptions)
