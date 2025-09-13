@@ -698,14 +698,6 @@ namespace JanSharp
                     suspendedInCustomPlayerData = true;
                     return false; // Return value does not matter.
                 }
-                if (corePlayerData.isOffline && !playerData.PersistPlayerDataPostImportWhileOffline())
-                {
-                    playerData.OnPlayerDataUninit();
-                    playerData.Delete();
-                    // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
-                    // empty reference object.
-                    corePlayerData.customPlayerData[importSuspendedClassNameIndex] = null;
-                }
                 suspendedIndexInCorePlayerDataArray++;
             }
             suspendedIndexInCorePlayerDataArray = 0;
@@ -829,15 +821,6 @@ namespace JanSharp
                     suspendedIndexInCustomPlayerDataArray++;
                 }
                 suspendedIndexInCustomPlayerDataArray = 0;
-                lockstep.FlagToContinueNextFrame(); // Make cleanup happen in its own frame.
-                importStage++;
-                return;
-            }
-
-            if (importStage == 4)
-            {
-                CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
-                allImportedPlayerData = null; // Free memory.
                 importStage = 0;
             }
         }
@@ -845,6 +828,10 @@ namespace JanSharp
         [LockstepEvent(LockstepEventType.OnImportFinished)]
         public void OnImportFinished()
         {
+            if (allImportedPlayerData == null) // The imported data did not contain the player data game state.
+                return;
+            CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+            allImportedPlayerData = null; // Free memory.
             persistentIdByImportedPersistentId.Clear();
         }
 
@@ -859,9 +846,26 @@ namespace JanSharp
                 CorePlayerData corePlayerData = allImportedPlayerData[i];
                 if (!corePlayerData.isOffline) // Non offline players always have all custom player data.
                     continue;
-                foreach (PlayerData playerData in corePlayerData.customPlayerData)
-                    if (playerData != null)
+                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                bool doKeep = false;
+                for (int j = 0; j < playerDataClassNamesCount; j++)
+                {
+                    PlayerData playerData = customPlayerData[j];
+                    if (playerData == null)
                         continue;
+                    if (playerData.PersistPlayerDataPostImportWhileOffline())
+                        doKeep = true;
+                    else
+                    {
+                        playerData.OnPlayerDataUninit();
+                        playerData.Delete();
+                        // The object has been deleted anyway, but this allows C#'s garbage collector
+                        // to clean up the empty reference object.
+                        customPlayerData[j] = null;
+                    }
+                }
+                if (doKeep)
+                    continue;
                 playerDataByName.Remove(corePlayerData.displayName);
                 DeleteCorePlayerData(corePlayerData);
             }

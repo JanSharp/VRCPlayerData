@@ -1,7 +1,5 @@
 ﻿using UdonSharp;
-using UnityEngine;
 using VRC.SDKBase;
-using VRC.Udon;
 
 namespace JanSharp
 {
@@ -35,6 +33,10 @@ namespace JanSharp
         public abstract string PlayerDataDisplayName { get; }
 
         public abstract bool PersistPlayerDataWhileOffline();
+        /// <summary>
+        /// <para>Called in <see cref="LockstepEventType.OnImportFinished"/>.</para>
+        /// </summary>
+        /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
 
         public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }
