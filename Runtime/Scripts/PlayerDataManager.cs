@@ -636,6 +636,8 @@ namespace JanSharp
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  ExportAllCustomPlayerData");
 #endif
+            suspendedInCustomPlayerData = false;
+
             while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
             {
                 if (DeSerializationIsRunningLong())
