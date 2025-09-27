@@ -89,7 +89,7 @@ namespace JanSharp
         public void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  RegisterCustomPlayerDataInternal");
+            Debug.Log($"[PlayerDataDebug] Manager  RegisterCustomPlayerDataInternal");
 #endif
             int index = ~ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             if (index < 0)
@@ -158,7 +158,7 @@ namespace JanSharp
         private PlayerData NewPlayerData(string className, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  NewPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  NewPlayerData");
 #endif
             PlayerData playerData = (PlayerData)wannaBeClasses.NewDynamic(className);
             playerData.corePlayerData = corePlayerData;
@@ -168,7 +168,7 @@ namespace JanSharp
         private CorePlayerData CreateNewCorePlayerData(uint playerId, string displayName)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  CreateNewCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CreateNewCorePlayerData");
 #endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
             corePlayerData.manager = this;
@@ -193,7 +193,7 @@ namespace JanSharp
         private void InitializeNewPlayer(uint playerId, string displayName)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  InitializeNewPlayer");
+            Debug.Log($"[PlayerDataDebug] Manager  InitializeNewPlayer");
 #endif
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
@@ -203,7 +203,7 @@ namespace JanSharp
         private void InitializeNewOvershadowedPlayer(uint playerId, CorePlayerData overshadowingPlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  InitializeNewOvershadowedPlayer");
+            Debug.Log($"[PlayerDataDebug] Manager  InitializeNewOvershadowedPlayer");
 #endif
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, overshadowingPlayerData.displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
@@ -213,7 +213,7 @@ namespace JanSharp
         private void InitializeRejoiningPlayer(uint playerId, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  InitializeRejoiningPlayer");
+            Debug.Log($"[PlayerDataDebug] Manager  InitializeRejoiningPlayer");
 #endif
             corePlayerData.isOffline = false;
             corePlayerData.playerId = playerId;
@@ -236,7 +236,7 @@ namespace JanSharp
         private void InitializePlayer(uint playerId)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  InitializePlayer");
+            Debug.Log($"[PlayerDataDebug] Manager  InitializePlayer");
 #endif
             string displayName = lockstep.GetDisplayName(playerId);
             if (!playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
@@ -255,7 +255,7 @@ namespace JanSharp
         public void OnInit()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  OnInit");
+            Debug.Log($"[PlayerDataDebug] Manager  OnInit");
 #endif
             InitializePlayer(lockstep.MasterPlayerId);
         }
@@ -264,7 +264,7 @@ namespace JanSharp
         public void OnPreClientJoined()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  OnPreClientJoined");
+            Debug.Log($"[PlayerDataDebug] Manager  OnPreClientJoined");
 #endif
             InitializePlayer(lockstep.JoinedPlayerId);
         }
@@ -273,7 +273,7 @@ namespace JanSharp
         public void OnClientLeft()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  OnClientLeft");
+            Debug.Log($"[PlayerDataDebug] Manager  OnClientLeft");
 #endif
             uint playerId = lockstep.LeftPlayerId;
             playerDataByPlayerId.Remove(playerId, out DataToken corePlayerDataToken);
@@ -327,7 +327,7 @@ namespace JanSharp
         private void DeleteCorePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeleteCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteCorePlayerData");
 #endif
             playerDataByPersistentId.Remove(corePlayerData.persistentId);
             int index = corePlayerData.index;
@@ -349,7 +349,7 @@ namespace JanSharp
         private void SerializeExpectedPlayerDataClassNames()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeExpectedPlayerDataClassNames");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeExpectedPlayerDataClassNames");
 #endif
             lockstep.WriteSmallUInt((uint)playerDataClassNamesCount);
             for (int i = 0; i < playerDataClassNamesCount; i++)
@@ -359,7 +359,7 @@ namespace JanSharp
         private bool ValidatePlayerDataClassNames(out string errorMessage)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ValidatePlayerDataClassNames");
+            Debug.Log($"[PlayerDataDebug] Manager  ValidatePlayerDataClassNames");
 #endif
             int count = (int)lockstep.ReadSmallUInt();
             string[] classNames = new string[count];
@@ -375,7 +375,7 @@ namespace JanSharp
         private void SerializeCustomPlayerData(PlayerData playerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeCustomPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeCustomPlayerData");
 #endif
             playerData.Serialize(isExport: false);
         }
@@ -383,7 +383,7 @@ namespace JanSharp
         private void DeserializeCustomPlayerData(CorePlayerData corePlayerData, int classNameIndex)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeserializeCustomPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeCustomPlayerData");
 #endif
             PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
             if (playerData == null)
@@ -398,7 +398,7 @@ namespace JanSharp
         private void SerializeCorePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeCorePlayerData");
 #endif
             if (suspendedInCustomPlayerData)
                 suspendedInCustomPlayerData = false;
@@ -437,7 +437,7 @@ namespace JanSharp
         private void DeserializeCorePlayerData(int index)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeserializeCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeCorePlayerData");
 #endif
             CorePlayerData corePlayerData = allPlayerData[index];
             if (suspendedInCustomPlayerData)
@@ -482,7 +482,7 @@ namespace JanSharp
         private void SerializeAllCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeAllCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeAllCorePlayerData");
 #endif
             if (!lockstep.IsContinuationFromPrevFrame)
                 lockstep.WriteSmallUInt((uint)allPlayerDataCount);
@@ -501,7 +501,7 @@ namespace JanSharp
         private void DeserializeAllCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeserializeAllCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeAllCorePlayerData");
 #endif
             if (deserializationStage == 0)
             {
@@ -544,7 +544,7 @@ namespace JanSharp
         private uint CountNonOvershadowedPlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  CountNonOvershadowedPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CountNonOvershadowedPlayerData");
 #endif
             uint count = 0;
             for (int i = 0; i < allPlayerDataCount; i++)
@@ -556,7 +556,7 @@ namespace JanSharp
         private uint CountPlayerDataSupportingExport(PlayerData[] customPlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  CountPlayerDataSupportingExport");
+            Debug.Log($"[PlayerDataDebug] Manager  CountPlayerDataSupportingExport");
 #endif
             uint toExportCount = 0;
             for (int i = 0; i < playerDataClassNamesCount; i++)
@@ -568,7 +568,7 @@ namespace JanSharp
         private void ExportCustomPlayerDataMetadata(PlayerData playerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ExportCustomPlayerDataMetadata");
+            Debug.Log($"[PlayerDataDebug] Manager  ExportCustomPlayerDataMetadata");
 #endif
             lockstep.WriteString(playerData.PlayerDataInternalName);
             lockstep.WriteString(playerData.PlayerDataDisplayName);
@@ -578,7 +578,7 @@ namespace JanSharp
         private void ImportCustomPlayerDataMetadata()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ImportCustomPlayerDataMetadata");
+            Debug.Log($"[PlayerDataDebug] Manager  ImportCustomPlayerDataMetadata");
 #endif
             importSuspendedInternalName = lockstep.ReadString();
             importSuspendedDisplayName = lockstep.ReadString();
@@ -588,7 +588,7 @@ namespace JanSharp
         private void ExportCorePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ExportCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  ExportCorePlayerData");
 #endif
             if (corePlayerData.IsOvershadowed)
                 return;
@@ -599,7 +599,7 @@ namespace JanSharp
         private CorePlayerData ImportCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ImportCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  ImportCorePlayerData");
 #endif
             uint importedPersistentId = lockstep.ReadSmallUInt();
             string displayName = lockstep.ReadString();
@@ -612,7 +612,7 @@ namespace JanSharp
         private CorePlayerData GetOrCreateCorePlayerDataForImport(string displayName)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  GetOrCreateCorePlayerDataForImport");
+            Debug.Log($"[PlayerDataDebug] Manager  GetOrCreateCorePlayerDataForImport");
 #endif
             if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
                 return (CorePlayerData)playerDataToken.Reference;
@@ -634,7 +634,7 @@ namespace JanSharp
         private void ExportAllCustomPlayerData(int classNameIndex)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  ExportAllCustomPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  ExportAllCustomPlayerData");
 #endif
             while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
             {
@@ -661,7 +661,7 @@ namespace JanSharp
         private bool TryImportAllCustomPlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  TryImportAllCustomPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData");
 #endif
             if (suspendedInCustomPlayerData)
                 suspendedInCustomPlayerData = false;
@@ -708,7 +708,7 @@ namespace JanSharp
         private PlayerData[] GetDummyCustomPlayerData()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  GetDummyCustomPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  GetDummyCustomPlayerData");
 #endif
             CorePlayerData corePlayerData = (CorePlayerData)playerDataByPlayerId[lockstep.MasterPlayerId].Reference;
             return corePlayerData.customPlayerData;
@@ -717,7 +717,7 @@ namespace JanSharp
         private void Export()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  Export");
+            Debug.Log($"[PlayerDataDebug] Manager  Export");
 #endif
             if (exportStage == 0)
             {
@@ -774,7 +774,7 @@ namespace JanSharp
         private void Import(uint importedDataVersion)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  Import");
+            Debug.Log($"[PlayerDataDebug] Manager  Import");
 #endif
             if (importStage == 0)
             {
@@ -838,7 +838,7 @@ namespace JanSharp
         private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  CleanUpEmptyImportedCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CleanUpEmptyImportedCorePlayerData");
 #endif
             int count = allImportedPlayerData.Length;
             for (int i = count - 1; i >= 0; i--)
@@ -881,7 +881,7 @@ namespace JanSharp
         public override void SerializeGameState(bool isExport, LockstepGameStateOptionsData exportOptions)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  SerializeGameState");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeGameState");
 #endif
             deSerializationSw.Reset();
             deSerializationSw.Start();
@@ -901,7 +901,7 @@ namespace JanSharp
         public override string DeserializeGameState(bool isImport, uint importedDataVersion, LockstepGameStateOptionsData importOptions)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  DeserializeGameState");
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeGameState");
 #endif
             deSerializationSw.Reset();
             deSerializationSw.Start();
@@ -923,7 +923,7 @@ namespace JanSharp
         private int OpenUnknownSizeScope()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  OpenUnknownSizeScope");
+            Debug.Log($"[PlayerDataDebug] Manager  OpenUnknownSizeScope");
 #endif
             int sizePosition = lockstep.WriteStreamPosition;
             lockstep.WriteStreamPosition += 4;
@@ -933,7 +933,7 @@ namespace JanSharp
         private void CloseUnknownSizeScope(int sizePosition)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerData] Manager  CloseUnknownSizeScope");
+            Debug.Log($"[PlayerDataDebug] Manager  CloseUnknownSizeScope");
 #endif
             int stopPosition = lockstep.WriteStreamPosition;
             lockstep.WriteStreamPosition = sizePosition;
