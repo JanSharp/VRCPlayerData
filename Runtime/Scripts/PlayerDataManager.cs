@@ -645,7 +645,10 @@ namespace JanSharp
                 }
                 CorePlayerData corePlayerData = allPlayerData[suspendedIndexInCorePlayerDataArray];
                 if (corePlayerData.IsOvershadowed)
+                {
+                    suspendedIndexInCorePlayerDataArray++;
                     continue;
+                }
                 PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
                 playerData.Serialize(isExport: true);
                 if (lockstep.FlaggedToContinueNextFrame)
@@ -754,7 +757,10 @@ namespace JanSharp
                         return;
                     PlayerData playerData = customPlayerData[suspendedIndexInCustomPlayerDataArray];
                     if (!playerData.SupportsImportExport)
+                    {
+                        suspendedIndexInCustomPlayerDataArray++;
                         continue;
+                    }
                     if (!suspendedInCustomPlayerData)
                     {
                         ExportCustomPlayerDataMetadata(playerData);
