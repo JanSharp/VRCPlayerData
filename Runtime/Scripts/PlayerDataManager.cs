@@ -2,7 +2,6 @@
 using UnityEngine;
 using VRC.SDK3.Data;
 using VRC.SDKBase;
-using VRC.Udon;
 
 namespace JanSharp
 {
@@ -118,16 +117,25 @@ namespace JanSharp
 
         public CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetCorePlayerDataForPlayerId - playerId: {playerId}");
+#endif
             return (CorePlayerData)playerDataByPlayerId[playerId].Reference;
         }
 
         public CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetCorePlayerDataForPersistentId - persistentId: {persistentId}");
+#endif
             return (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
         }
 
         public PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPlayerIdDynamic - playerDataClassName: {playerDataClassName}, playerId: {playerId}");
+#endif
             CorePlayerData corePlayerData = (CorePlayerData)playerDataByPlayerId[playerId].Reference;
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             return corePlayerData.customPlayerData[classIndex];
@@ -135,6 +143,9 @@ namespace JanSharp
 
         public PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPersistentIdDynamic - playerDataClassName: {playerDataClassName}, persistentId: {persistentId}");
+#endif
             CorePlayerData corePlayerData = (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             return corePlayerData.customPlayerData[classIndex];
@@ -142,12 +153,18 @@ namespace JanSharp
 
         public PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataFromCoreDynamic - playerDataClassName: {playerDataClassName}, corePlayerData != null: {corePlayerData != null}");
+#endif
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             return corePlayerData.customPlayerData[classIndex];
         }
 
         public PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetAllPlayerDataDynamic - playerDataClassName: {playerDataClassName}");
+#endif
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
             PlayerData[] result = new PlayerData[allPlayerDataCount];
             for (int i = 0; i < allPlayerDataCount; i++)
@@ -881,6 +898,9 @@ namespace JanSharp
 
         public uint GetPersistentIdFromImportedId(uint importedPersistentId)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(importedPersistentId == 0u ? 0u : persistentIdByImportedPersistentId[importedPersistentId].UInt)}");
+#endif
             return importedPersistentId == 0u
                 ? 0u
                 : persistentIdByImportedPersistentId[importedPersistentId].UInt;
