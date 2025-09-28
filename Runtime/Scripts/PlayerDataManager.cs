@@ -468,6 +468,7 @@ namespace JanSharp
                 playerDataByPlayerId.Add(playerId, corePlayerData);
                 corePlayerData.playerId = playerId;
                 corePlayerData.persistentId = lockstep.ReadSmallUInt();
+                playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
 
                 lockstep.ReadFlags(out corePlayerData.isOffline, out bool isOvershadowed);
                 corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
