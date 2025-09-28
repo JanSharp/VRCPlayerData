@@ -15,7 +15,8 @@ namespace JanSharp
         public override uint GameStateDataVersion => 0u;
         public override uint GameStateLowestSupportedDataVersion => 0u;
         public override LockstepGameStateOptionsUI ExportUI => null;
-        public override LockstepGameStateOptionsUI ImportUI => null;
+        public override LockstepGameStateOptionsUI ImportUI => importUI;
+        [SerializeField] private PlayerDataImportUI importUI;
 
         [HideInInspector][SerializeField][SingletonReference] private WannaBeClassesManager wannaBeClasses;
 
