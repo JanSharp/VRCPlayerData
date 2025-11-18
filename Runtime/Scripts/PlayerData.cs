@@ -8,6 +8,8 @@ namespace JanSharp
     {
         [System.NonSerialized] public CorePlayerData corePlayerData;
 
+        // TODO: Honestly just remove all of these properties. They are a waste of both instantiate and runtime performance.
+
         public uint PersistentId => corePlayerData.persistentId;
         public uint ImportedPersistentId => corePlayerData.importedPersistentId;
         public uint PlayerId => corePlayerData.playerId;
@@ -16,7 +18,7 @@ namespace JanSharp
             get
             {
                 VRCPlayerApi player = corePlayerData.playerApi;
-                if (player != null && !player.IsValid())
+                if (!Utilities.IsValid(player))
                 {
                     corePlayerData.playerApi = null;
                     return null;
