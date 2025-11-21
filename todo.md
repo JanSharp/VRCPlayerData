@@ -6,3 +6,4 @@
 - [ ] document the API
 - [ ] document the data life cycle of player data
 - [ ] make using the player data system an enjoyable experience (aka polish the API)
+- [ ] add PlayerDataManagerAPI class, making PlayerDataManager internal, same as Lockstep with LockstepAPI
