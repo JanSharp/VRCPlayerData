@@ -179,7 +179,7 @@ namespace JanSharp
             Debug.Log($"[PlayerDataDebug] Manager  NewPlayerData");
 #endif
             PlayerData playerData = (PlayerData)wannaBeClasses.NewDynamic(className);
-            playerData.corePlayerData = corePlayerData;
+            playerData.core = corePlayerData;
             return playerData;
         }
 

@@ -36,7 +36,7 @@ namespace JanSharp
         private void CreateHitBoxForPlayer(uint playerId)
         {
             PlayerHealthAndExpData playerData = GetPlayerData(playerId);
-            VRCPlayerApi player = playerData.corePlayerData.PlayerApi;
+            VRCPlayerApi player = playerData.core.PlayerApi;
             if (player == null)
                 return;
 #if PLAYER_DATA_DEBUG
@@ -132,7 +132,7 @@ namespace JanSharp
 
             if (Input.GetKeyDown(KeyCode.F))
                 foreach (PlayerHealthAndExpData playerData in playerDataManager.GetAllPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData)))
-                    Debug.Log($"<dlt> {playerData.corePlayerData.displayName} (isOffline: {playerData.corePlayerData.isOffline}): health: {playerData.health}, exp: {playerData.exp}");
+                    Debug.Log($"<dlt> {playerData.core.displayName} (isOffline: {playerData.core.isOffline}): health: {playerData.health}, exp: {playerData.exp}");
         }
     }
 }

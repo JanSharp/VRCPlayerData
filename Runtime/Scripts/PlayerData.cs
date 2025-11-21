@@ -5,7 +5,7 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public abstract class PlayerData : SerializableWannaBeClass
     {
-        [System.NonSerialized] public CorePlayerData corePlayerData;
+        [System.NonSerialized] public CorePlayerData core;
 
         public abstract string PlayerDataInternalName { get; }
         public abstract string PlayerDataDisplayName { get; }
