@@ -13,7 +13,6 @@ namespace JanSharp
 
         [System.NonSerialized] public uint health = MaxHealth;
         [System.NonSerialized] public uint exp = 0u;
-        [System.NonSerialized] public PlayerHealthAndExpManager manager;
         [System.NonSerialized] public TestPlayerHitBox hitBox;
 
         public const uint MaxHealth = 100u;

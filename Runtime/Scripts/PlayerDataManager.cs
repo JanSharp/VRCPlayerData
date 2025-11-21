@@ -189,7 +189,6 @@ namespace JanSharp
             Debug.Log($"[PlayerDataDebug] Manager  CreateNewCorePlayerData");
 #endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
-            corePlayerData.manager = this;
             corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
@@ -462,7 +461,6 @@ namespace JanSharp
                 suspendedInCustomPlayerData = false;
             else
             {
-                corePlayerData.manager = this;
                 corePlayerData.index = index;
                 uint playerId = lockstep.ReadSmallUInt();
                 playerDataByPlayerId.Add(playerId, corePlayerData);
@@ -637,7 +635,6 @@ namespace JanSharp
                 return (CorePlayerData)playerDataToken.Reference;
 
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
-            corePlayerData.manager = this;
             corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.displayName = displayName;
             corePlayerData.isOffline = true;

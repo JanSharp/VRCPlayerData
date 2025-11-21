@@ -1,4 +1,5 @@
 ﻿using UdonSharp;
+using UnityEngine;
 using VRC.SDKBase;
 
 namespace JanSharp
@@ -6,7 +7,7 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class CorePlayerData : WannaBeClass
     {
-        [System.NonSerialized] public PlayerDataManager manager;
+        [HideInInspector][SingletonReference] public PlayerDataManager manager;
         [System.NonSerialized] public int index;
         [System.NonSerialized] public uint persistentId;
         [System.NonSerialized] public uint importedPersistentId;

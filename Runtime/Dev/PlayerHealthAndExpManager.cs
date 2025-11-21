@@ -36,7 +36,6 @@ namespace JanSharp
         private void CreateHitBoxForPlayer(uint playerId)
         {
             PlayerHealthAndExpData playerData = GetPlayerData(playerId);
-            playerData.manager = this;
             VRCPlayerApi player = playerData.PlayerApi;
             if (player == null)
                 return;
