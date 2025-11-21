@@ -13,6 +13,19 @@ namespace JanSharp
         [System.NonSerialized] public uint importedPersistentId;
         [System.NonSerialized] public uint playerId;
         [System.NonSerialized] public VRCPlayerApi playerApi;
+        public VRCPlayerApi PlayerApi
+        {
+            get
+            {
+                VRCPlayerApi player = playerApi;
+                if (!Utilities.IsValid(player))
+                {
+                    playerApi = null;
+                    return null;
+                }
+                return player;
+            }
+        }
         [System.NonSerialized] public string displayName;
         [System.NonSerialized] public bool isOffline;
         [System.NonSerialized] public CorePlayerData overshadowingPlayerData;
