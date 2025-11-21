@@ -233,6 +233,7 @@ namespace JanSharp.Internal
 #endif
             corePlayerData.isOffline = false;
             corePlayerData.playerId = playerId;
+            corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
