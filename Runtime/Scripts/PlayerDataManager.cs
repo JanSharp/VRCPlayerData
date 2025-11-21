@@ -306,9 +306,7 @@ namespace JanSharp.Internal
                     continue;
                 }
                 playerData.OnPlayerDataUninit();
-                playerData.Delete();
-                // The object has been deleted anyway, but this allows C#'s garbage collector to clean up the
-                // empty reference object.
+                playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
             }
             if (shouldPersist)
@@ -349,7 +347,7 @@ namespace JanSharp.Internal
             int index = corePlayerData.index;
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
-            corePlayerData.Delete();
+            corePlayerData.DecrementRefsCount();
         }
 
         #region Serialization
@@ -881,9 +879,7 @@ namespace JanSharp.Internal
                     else
                     {
                         playerData.OnPlayerDataUninit();
-                        playerData.Delete();
-                        // The object has been deleted anyway, but this allows C#'s garbage collector
-                        // to clean up the empty reference object.
+                        playerData.DecrementRefsCount();
                         customPlayerData[j] = null;
                     }
                 }

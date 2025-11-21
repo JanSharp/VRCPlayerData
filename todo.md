@@ -1,5 +1,5 @@
 
-- [ ] probably change the WannaBeClass.Delete calls to DecrementRefsCount
+- [x] probably change the WannaBeClass.Delete calls to DecrementRefsCount
 - [ ] API to create offline player
 - [ ] API to delete custom player data for offline player
 - [x] ~~fix \[PlayerData\] prefixes missing the Debug postfix~~ they are fine, what am I on about
