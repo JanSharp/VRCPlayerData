@@ -36,8 +36,8 @@ namespace JanSharp
         private void CreateHitBoxForPlayer(uint playerId)
         {
             PlayerHealthAndExpData playerData = GetPlayerData(playerId);
-            VRCPlayerApi player = playerData.core.PlayerApi;
-            if (player == null)
+            VRCPlayerApi player = playerData.core.playerApi;
+            if (!Utilities.IsValid(player))
                 return;
 #if PLAYER_DATA_DEBUG
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
