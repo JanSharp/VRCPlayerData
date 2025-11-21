@@ -333,6 +333,7 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 86837765}
   wannaBeClasses: {fileID: 500270404}
+  manager: {fileID: 1748081597}
 --- !u!4 &86837764
 Transform:
   m_ObjectHideFlags: 0

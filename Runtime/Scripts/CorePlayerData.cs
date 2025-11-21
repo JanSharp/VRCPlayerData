@@ -7,12 +7,13 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class CorePlayerData : WannaBeClass
     {
-        [HideInInspector][SingletonReference] public PlayerDataManager manager;
+        [HideInInspector][SingletonReference] public PlayerDataManagerAPI manager;
         [System.NonSerialized] public int index;
         [System.NonSerialized] public uint persistentId;
         [System.NonSerialized] public uint importedPersistentId;
         [System.NonSerialized] public uint playerId;
         [System.NonSerialized] public VRCPlayerApi playerApi;
+        // TODO: probably just remove this entirely and make people use Utilities.IsValid, much to my dismay.
         public VRCPlayerApi PlayerApi
         {
             get
@@ -43,7 +44,7 @@ namespace JanSharp
         public static T GetPlayerData<T>(this CorePlayerData corePlayerData, string playerDataClassName)
             where T : PlayerData
         {
-            return (T)corePlayerData.GetPlayerDataDynamic(playerDataClassName);
+            return (T)corePlayerData.manager.GetPlayerDataFromCoreDynamic(playerDataClassName, corePlayerData);
         }
     }
 }

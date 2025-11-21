@@ -9,7 +9,7 @@ namespace JanSharp
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class PlayerHealthAndExpManager : UdonSharpBehaviour
     {
-        [HideInInspector][SerializeField][SingletonReference] private PlayerDataManager playerDataManager;
+        [HideInInspector][SerializeField][SingletonReference] private PlayerDataManagerAPI playerDataManager;
         [HideInInspector][SerializeField][SingletonReference] private BoneAttachmentManager boneAttachmentManager;
         [HideInInspector][SerializeField][SingletonReference] private LockstepAPI lockstep;
 

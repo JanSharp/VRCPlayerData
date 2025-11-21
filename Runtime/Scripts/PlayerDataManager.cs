@@ -3,11 +3,10 @@ using UnityEngine;
 using VRC.SDK3.Data;
 using VRC.SDKBase;
 
-namespace JanSharp
+namespace JanSharp.Internal
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    [SingletonScript("28a5e083347ce2753aa92dfda01bef32")] // Runtime/Prefabs/PlayerDataManager.prefab
-    public class PlayerDataManager : LockstepGameState
+    public class PlayerDataManager : PlayerDataManagerAPI
     {
         public override string GameStateInternalName => "jansharp.player-data";
         public override string GameStateDisplayName => "Player Data";
@@ -86,7 +85,7 @@ namespace JanSharp
         private int importSuspendedScopeByteSize;
         private int importSuspendedClassNameIndex;
 
-        public void RegisterCustomPlayerDataDynamic(string playerDataClassName)
+        public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  RegisterCustomPlayerDataInternal");
@@ -116,7 +115,7 @@ namespace JanSharp
             ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, playerDataClassName, index);
         }
 
-        public CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
+        public override CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetCorePlayerDataForPlayerId - playerId: {playerId}");
@@ -124,7 +123,7 @@ namespace JanSharp
             return (CorePlayerData)playerDataByPlayerId[playerId].Reference;
         }
 
-        public CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId)
+        public override CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetCorePlayerDataForPersistentId - persistentId: {persistentId}");
@@ -132,7 +131,7 @@ namespace JanSharp
             return (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
         }
 
-        public PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
+        public override PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPlayerIdDynamic - playerDataClassName: {playerDataClassName}, playerId: {playerId}");
@@ -142,7 +141,7 @@ namespace JanSharp
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
+        public override PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPersistentIdDynamic - playerDataClassName: {playerDataClassName}, persistentId: {persistentId}");
@@ -152,7 +151,7 @@ namespace JanSharp
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
+        public override PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataFromCoreDynamic - playerDataClassName: {playerDataClassName}, corePlayerData != null: {corePlayerData != null}");
@@ -161,7 +160,7 @@ namespace JanSharp
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName)
+        public override PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetAllPlayerDataDynamic - playerDataClassName: {playerDataClassName}");
@@ -895,7 +894,7 @@ namespace JanSharp
             }
         }
 
-        public uint GetPersistentIdFromImportedId(uint importedPersistentId)
+        public override uint GetPersistentIdFromImportedId(uint importedPersistentId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(importedPersistentId == 0u ? 0u : persistentIdByImportedPersistentId[importedPersistentId].UInt)}");
@@ -969,38 +968,5 @@ namespace JanSharp
         }
 
         #endregion
-    }
-
-    public static class PlayerDataManagerExtensions
-    {
-        public static void RegisterCustomPlayerData<T>(this PlayerDataManager manager, string playerDataClassName)
-            where T : PlayerData
-        {
-            manager.RegisterCustomPlayerDataDynamic(playerDataClassName);
-        }
-
-        public static T GetPlayerDataForPlayerId<T>(this PlayerDataManager manager, string playerDataClassName, uint playerId)
-            where T : PlayerData
-        {
-            return (T)manager.GetPlayerDataForPlayerIdDynamic(playerDataClassName, playerId);
-        }
-
-        public static T GetPlayerDataForPersistentId<T>(this PlayerDataManager manager, string playerDataClassName, uint persistentId)
-            where T : PlayerData
-        {
-            return (T)manager.GetPlayerDataForPersistentIdDynamic(playerDataClassName, persistentId);
-        }
-
-        public static T GetPlayerDataFromCore<T>(this PlayerDataManager manager, string playerDataClassName, CorePlayerData corePlayerData)
-            where T : PlayerData
-        {
-            return (T)manager.GetPlayerDataFromCoreDynamic(playerDataClassName, corePlayerData);
-        }
-
-        public static T[] GetAllPlayerData<T>(this PlayerDataManager manager, string playerDataClassName)
-            where T : PlayerData
-        {
-            return (T[])manager.GetAllPlayerDataDynamic(playerDataClassName);
-        }
     }
 }

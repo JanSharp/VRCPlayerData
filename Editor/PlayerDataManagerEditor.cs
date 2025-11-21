@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using JanSharp.Internal;
 using UnityEditor;
 
 namespace JanSharp
