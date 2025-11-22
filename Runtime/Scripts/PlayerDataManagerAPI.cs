@@ -10,7 +10,26 @@ namespace JanSharp
         public abstract PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId);
         public abstract PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
         public abstract PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
+        /// <summary>
+        /// <para>Usable during the import process.</para>
+        /// <para>Specifically starting from when the player data game state has been imported (use the
+        /// <see cref="LockstepGameStateDependencyAttribute"/> targeting the
+        /// <see cref="PlayerDataManagerAPI"/> class to ensure game states depending on this API import after
+        /// the player data game state.)</para>
+        /// <para>And this gets cleared in the <see cref="LockstepEventType.OnImportFinished"/> event with an
+        /// <c>Order</c> of <c>10000</c>.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        /// <param name="importedPersistentId"></param>
+        /// <returns></returns>
         public abstract uint GetPersistentIdFromImportedId(uint importedPersistentId);
+
+        /// <summary>
+        /// <para>Usable inside of the <see cref="PlayerDataEventType"/> events which are tied to player
+        /// data.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        public abstract CorePlayerData PlayerDataForEvent { get; }
     }
 
     public static class PlayerDataManagerExtensions

@@ -9,4 +9,4 @@
 - [ ] make using the player data system an enjoyable experience (aka polish the API)
 - [x] add PlayerDataManagerAPI class, making PlayerDataManager internal, same as Lockstep with LockstepAPI
 - [ ] probably add an api function to get the player data index for some custom player data class, so other system can just index the array directly rather than having to go through the api function which uses a data dictionary every time
-- [ ] maybe inform any custom player data that did not get imported as it was not part of the imported data that an import has happened, such that said custom player data has the option to reset itself if appropriate
+- [ ] maybe inform any custom player data that did not get imported as that whole player was not part of the imported data that an import has happened, such that said custom player data has the option to reset itself if appropriate

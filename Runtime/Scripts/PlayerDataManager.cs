@@ -6,6 +6,7 @@ using VRC.SDKBase;
 namespace JanSharp.Internal
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [CustomRaisedEventsDispatcher(typeof(PlayerDataEventAttribute), typeof(PlayerDataEventType))]
     public class PlayerDataManager : PlayerDataManagerAPI
     {
         public override string GameStateInternalName => "jansharp.player-data";
@@ -214,7 +215,7 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             playerDataByName.Add(displayName, corePlayerData);
-            // TODO: raise event?
+            RaiseOnPlayerDataCreated(corePlayerData);
         }
 
         private void InitializeNewOvershadowedPlayer(uint playerId, CorePlayerData overshadowingPlayerData)
@@ -229,7 +230,9 @@ namespace JanSharp.Internal
             {
                 overshadowingPlayerData.firstOvershadowedPlayerData = corePlayerData;
                 overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
-                // TODO: raise event?
+                RaiseOnPlayerDataCreated(corePlayerData);
+                RaiseOnPlayerDataStartedBeingOvershadowed(corePlayerData);
+                RaiseOnPlayerDataStartedOvershadowing(overshadowingPlayerData);
             }
             else
             {
@@ -237,8 +240,9 @@ namespace JanSharp.Internal
                 last.nextOvershadowedPlayerData = corePlayerData;
                 corePlayerData.prevOvershadowedPlayerData = last;
                 overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
+                RaiseOnPlayerDataCreated(corePlayerData);
+                RaiseOnPlayerDataStartedBeingOvershadowed(corePlayerData);
             }
-            // TODO: raise event?
         }
 
         private void InitializeRejoiningPlayer(uint playerId, CorePlayerData corePlayerData)
@@ -263,6 +267,7 @@ namespace JanSharp.Internal
                     playerData.OnPlayerDataInit(isAboutToBeImported: false);
                 }
             }
+            RaiseOnPlayerDataWentOnline(corePlayerData);
         }
 
         private void InitializePlayer(uint playerId)
@@ -312,6 +317,10 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = (CorePlayerData)corePlayerDataToken.Reference;
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             bool shouldPersist = false;
+            // TODO: If a player data is overshadowed delete it unconditionally.
+            // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
+            // Same for when a player was overshadowing another player, as the other player becomes no longer
+            // overshadowed, thus taking the the leaving player's place in playerDataByName.
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
@@ -328,11 +337,12 @@ namespace JanSharp.Internal
             if (shouldPersist)
             {
                 corePlayerData.isOffline = true;
-                // TODO: raise event?
+                RaiseOnPlayerDataWentOffline(corePlayerData);
                 return;
             }
 
             DeleteCorePlayerData(corePlayerData);
+            RaiseOnPlayerDataDeleted(corePlayerData);
         }
 
         private void ResolveOvershadowingUponRemoval(CorePlayerData corePlayerData)
@@ -358,9 +368,7 @@ namespace JanSharp.Internal
                     overshadowing.lastOvershadowedPlayerData = prev;
 
                 if (!overshadowing.IsOvershadowing)
-                {
-                    // TODO: raise event?
-                }
+                    RaiseOnPlayerDataStoppedOvershadowing(overshadowing);
                 return;
             }
 
@@ -375,7 +383,7 @@ namespace JanSharp.Internal
             playerDataByName[corePlayerData.displayName] = playerTakingOver;
             next = playerTakingOver.nextOvershadowedPlayerData;
             playerTakingOver.nextOvershadowedPlayerData = null;
-            // TODO: raise event? (a player is no longer being overshadowed)
+            RaiseOnPlayerDataStoppedBeingOvershadowed(playerTakingOver);
 
             if (next == null)
                 return;
@@ -383,14 +391,14 @@ namespace JanSharp.Internal
             next.prevOvershadowedPlayerData = null;
             playerTakingOver.firstOvershadowedPlayerData = next;
             playerTakingOver.lastOvershadowedPlayerData = corePlayerData.lastOvershadowedPlayerData;
+            RaiseOnPlayerDataStartedOvershadowing(playerTakingOver);
             do
             {
                 next.overshadowingPlayerData = playerTakingOver;
+                RaiseOnPlayerDataOvershadowingPlayerChanged(next);
                 next = next.nextOvershadowedPlayerData;
-                // TODO: raise event? (a player is overshadowed by a different player now)
             }
             while (next != null);
-            // TODO: raise event? (a player is now overshadowing others when they weren't before)
         }
 
         private void DeleteCorePlayerData(CorePlayerData corePlayerData)
@@ -404,8 +412,6 @@ namespace JanSharp.Internal
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
             corePlayerData.DecrementRefsCount();
-            // TODO: raise event? Or maybe not here but at the end of OnClientLeft?
-            // Depends on how that other usage of this function works.
         }
 
         #region Serialization
@@ -934,12 +940,17 @@ namespace JanSharp.Internal
             }
         }
 
-        [LockstepEvent(LockstepEventType.OnImportFinished)]
+        [LockstepEvent(LockstepEventType.OnImportFinished, Order = -10000)]
         public void OnImportFinished()
         {
             if (allImportedPlayerData == null) // The imported data did not contain the player data game state.
                 return;
             CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+            RaiseOnPlayerDataImportFinished();
+        }
+
+        public void OnLateImportFinished()
+        {
             allImportedPlayerData = null; // Free memory.
             persistentIdByImportedPersistentId.Clear();
         }
@@ -1048,6 +1059,102 @@ namespace JanSharp.Internal
             lockstep.WriteStreamPosition = sizePosition;
             lockstep.WriteInt(stopPosition - sizePosition - 4);
             lockstep.WriteStreamPosition = stopPosition;
+        }
+
+        #endregion
+
+        #region EventDispatcher
+
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataCreatedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataDeletedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataWentOfflineListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataWentOnlineListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStartedOvershadowingListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStoppedOvershadowingListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStartedBeingOvershadowedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStoppedBeingOvershadowedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataOvershadowingPlayerChangedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataImportFinishedListeners;
+
+        private CorePlayerData playerDataForEvent;
+        public override CorePlayerData PlayerDataForEvent => playerDataForEvent;
+
+        private void RaiseOnPlayerDataCreated(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataCreatedListeners, nameof(PlayerDataEventType.OnPlayerDataCreated));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataDeleted(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataDeletedListeners, nameof(PlayerDataEventType.OnPlayerDataDeleted));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataWentOffline(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataWentOfflineListeners, nameof(PlayerDataEventType.OnPlayerDataWentOffline));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataWentOnline(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataWentOnlineListeners, nameof(PlayerDataEventType.OnPlayerDataWentOnline));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataStartedOvershadowing(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataStartedOvershadowingListeners, nameof(PlayerDataEventType.OnPlayerDataStartedOvershadowing));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataStoppedOvershadowing(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataStoppedOvershadowingListeners, nameof(PlayerDataEventType.OnPlayerDataStoppedOvershadowing));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataStartedBeingOvershadowed(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataStartedBeingOvershadowedListeners, nameof(PlayerDataEventType.OnPlayerDataStartedBeingOvershadowed));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataStoppedBeingOvershadowed(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataStoppedBeingOvershadowedListeners, nameof(PlayerDataEventType.OnPlayerDataStoppedBeingOvershadowed));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataOvershadowingPlayerChanged(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataOvershadowingPlayerChangedListeners, nameof(PlayerDataEventType.OnPlayerDataOvershadowingPlayerChanged));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPlayerDataImportFinished()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataImportFinishedListeners, nameof(PlayerDataEventType.OnPlayerDataImportFinished));
         }
 
         #endregion
