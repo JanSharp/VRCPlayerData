@@ -225,6 +225,19 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, overshadowingPlayerData.displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             corePlayerData.overshadowingPlayerData = overshadowingPlayerData;
+            if (!overshadowingPlayerData.IsOvershadowing)
+            {
+                overshadowingPlayerData.firstOvershadowedPlayerData = corePlayerData;
+                overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
+                // TODO: raise event?
+            }
+            else
+            {
+                CorePlayerData last = overshadowingPlayerData.lastOvershadowedPlayerData;
+                last.nextOvershadowedPlayerData = corePlayerData;
+                corePlayerData.prevOvershadowedPlayerData = last;
+                overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
+            }
             // TODO: raise event?
         }
 
@@ -319,30 +332,65 @@ namespace JanSharp.Internal
                 return;
             }
 
-            // TODO: Isn't this entirely redundant if corePlayerData.IsOvershadowed is true?
-            CorePlayerData newlyOvershadowingPlayerData = null;
-            // TODO: I really do not like this loop here. Maybe could use a linked list of players being overshadowed?
-            for (int i = 0; i < allPlayerDataCount; i++)
+            DeleteCorePlayerData(corePlayerData);
+        }
+
+        private void ResolveOvershadowingUponRemoval(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ResolveOvershadowingUponRemoval");
+#endif
+            CorePlayerData next; // C# moment. Cannot declare that local in the if and afterwards outside too.
+            if (corePlayerData.IsOvershadowed)
             {
-                CorePlayerData other = allPlayerData[i];
-                if (other.overshadowingPlayerData == corePlayerData)
+                CorePlayerData prev = corePlayerData.prevOvershadowedPlayerData;
+                next = corePlayerData.nextOvershadowedPlayerData;
+                CorePlayerData overshadowing = corePlayerData.overshadowingPlayerData;
+
+                if (prev != null)
+                    prev.nextOvershadowedPlayerData = next;
+                else
+                    overshadowing.firstOvershadowedPlayerData = next;
+
+                if (next != null)
+                    next.prevOvershadowedPlayerData = prev;
+                else
+                    overshadowing.lastOvershadowedPlayerData = prev;
+
+                if (!overshadowing.IsOvershadowing)
                 {
-                    if (newlyOvershadowingPlayerData != null)
-                    {
-                        other.overshadowingPlayerData = newlyOvershadowingPlayerData;
-                        // TODO: raise event?
-                        continue;
-                    }
-                    newlyOvershadowingPlayerData = other;
-                    playerDataByName[corePlayerData.displayName] = other;
-                    other.overshadowingPlayerData = null;
                     // TODO: raise event?
                 }
+                return;
             }
 
-            if (!corePlayerData.IsOvershadowed && newlyOvershadowingPlayerData == null)
+            if (!corePlayerData.IsOvershadowing)
+            {
                 playerDataByName.Remove(corePlayerData.displayName);
-            DeleteCorePlayerData(corePlayerData);
+                return;
+            }
+
+            CorePlayerData playerTakingOver = corePlayerData.firstOvershadowedPlayerData;
+            playerTakingOver.overshadowingPlayerData = null;
+            playerDataByName[corePlayerData.displayName] = playerTakingOver;
+            next = playerTakingOver.nextOvershadowedPlayerData;
+            playerTakingOver.nextOvershadowedPlayerData = null;
+            // TODO: raise event? (a player is no longer being overshadowed)
+
+            if (next == null)
+                return;
+
+            next.prevOvershadowedPlayerData = null;
+            playerTakingOver.firstOvershadowedPlayerData = next;
+            playerTakingOver.lastOvershadowedPlayerData = corePlayerData.lastOvershadowedPlayerData;
+            do
+            {
+                next.overshadowingPlayerData = playerTakingOver;
+                next = next.nextOvershadowedPlayerData;
+                // TODO: raise event? (a player is overshadowed by a different player now)
+            }
+            while (next != null);
+            // TODO: raise event? (a player is now overshadowing others when they weren't before)
         }
 
         private void DeleteCorePlayerData(CorePlayerData corePlayerData)
@@ -350,6 +398,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteCorePlayerData");
 #endif
+            ResolveOvershadowingUponRemoval(corePlayerData);
             playerDataByPersistentId.Remove(corePlayerData.persistentId);
             int index = corePlayerData.index;
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
@@ -430,11 +479,26 @@ namespace JanSharp.Internal
                 lockstep.WriteSmallUInt(corePlayerData.playerId);
                 lockstep.WriteSmallUInt(corePlayerData.persistentId);
 
-                lockstep.WriteFlags(corePlayerData.isOffline, corePlayerData.IsOvershadowed);
+                lockstep.WriteFlags(
+                    corePlayerData.isOffline,
+                    corePlayerData.IsOvershadowed,
+                    corePlayerData.prevOvershadowedPlayerData != null,
+                    corePlayerData.nextOvershadowedPlayerData != null,
+                    corePlayerData.IsOvershadowing);
+
                 if (corePlayerData.isOffline)
                     lockstep.WriteString(corePlayerData.displayName);
                 if (corePlayerData.IsOvershadowed)
                     lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
+                if (corePlayerData.prevOvershadowedPlayerData != null)
+                    lockstep.WriteSmallUInt((uint)corePlayerData.prevOvershadowedPlayerData.index);
+                if (corePlayerData.nextOvershadowedPlayerData != null)
+                    lockstep.WriteSmallUInt((uint)corePlayerData.nextOvershadowedPlayerData.index);
+                if (corePlayerData.IsOvershadowing)
+                {
+                    lockstep.WriteSmallUInt((uint)corePlayerData.firstOvershadowedPlayerData.index);
+                    lockstep.WriteSmallUInt((uint)corePlayerData.lastOvershadowedPlayerData.index);
+                }
             }
 
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
@@ -474,12 +538,27 @@ namespace JanSharp.Internal
                 corePlayerData.persistentId = lockstep.ReadSmallUInt();
                 playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
 
-                lockstep.ReadFlags(out corePlayerData.isOffline, out bool isOvershadowed);
+                lockstep.ReadFlags(
+                    out corePlayerData.isOffline,
+                    out bool isOvershadowed,
+                    out bool hasPrevOvershadowed,
+                    out bool hasNextOvershadowed,
+                    out bool isOvershadowing);
+
                 corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
                 if (isOvershadowed)
                     corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
                 else
                     playerDataByName.Add(corePlayerData.displayName, corePlayerData);
+                if (hasPrevOvershadowed)
+                    corePlayerData.prevOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                if (hasNextOvershadowed)
+                    corePlayerData.nextOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                if (isOvershadowing)
+                {
+                    corePlayerData.firstOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                    corePlayerData.lastOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                }
 
                 corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
             }
@@ -894,7 +973,6 @@ namespace JanSharp.Internal
                 }
                 if (doKeep)
                     continue;
-                playerDataByName.Remove(corePlayerData.displayName);
                 DeleteCorePlayerData(corePlayerData);
             }
         }
