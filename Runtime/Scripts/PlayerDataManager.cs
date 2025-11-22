@@ -315,12 +315,51 @@ namespace JanSharp.Internal
             uint playerId = lockstep.LeftPlayerId;
             playerDataByPlayerId.Remove(playerId, out DataToken corePlayerDataToken);
             CorePlayerData corePlayerData = (CorePlayerData)corePlayerDataToken.Reference;
+
+            if (corePlayerData.IsOvershadowed || corePlayerData.IsOvershadowing)
+            {
+                // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
+                // Same for when a player was overshadowing another player, as the other player becomes no
+                // longer overshadowed, thus taking the the leaving player's place in playerDataByName.
+                ForceUninitPlayerData(corePlayerData);
+            }
+            else
+            {
+                bool shouldPersist = UninitOrPersistPlayerData(corePlayerData);
+                if (shouldPersist)
+                {
+                    corePlayerData.isOffline = true;
+                    RaiseOnPlayerDataWentOffline(corePlayerData);
+                    return;
+                }
+            }
+
+            DeleteCorePlayerData(corePlayerData);
+            RaiseOnPlayerDataDeleted(corePlayerData);
+        }
+
+        private void ForceUninitPlayerData(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  UninitPlayerDataUnconditionally");
+#endif
+            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            for (int i = 0; i < playerDataClassNamesCount; i++)
+            {
+                PlayerData playerData = customPlayerData[i];
+                playerData.OnPlayerDataForceUninit();
+                playerData.DecrementRefsCount();
+                customPlayerData[i] = null;
+            }
+        }
+
+        private bool UninitOrPersistPlayerData(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  UninitOrPersistPlayerData");
+#endif
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             bool shouldPersist = false;
-            // TODO: If a player data is overshadowed delete it unconditionally.
-            // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
-            // Same for when a player was overshadowing another player, as the other player becomes no longer
-            // overshadowed, thus taking the the leaving player's place in playerDataByName.
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
@@ -334,15 +373,7 @@ namespace JanSharp.Internal
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
             }
-            if (shouldPersist)
-            {
-                corePlayerData.isOffline = true;
-                RaiseOnPlayerDataWentOffline(corePlayerData);
-                return;
-            }
-
-            DeleteCorePlayerData(corePlayerData);
-            RaiseOnPlayerDataDeleted(corePlayerData);
+            return shouldPersist;
         }
 
         private void ResolveOvershadowingUponRemoval(CorePlayerData corePlayerData)
