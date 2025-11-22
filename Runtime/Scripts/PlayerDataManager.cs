@@ -214,6 +214,7 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             playerDataByName.Add(displayName, corePlayerData);
+            // TODO: raise event?
         }
 
         private void InitializeNewOvershadowedPlayer(uint playerId, CorePlayerData overshadowingPlayerData)
@@ -224,6 +225,7 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, overshadowingPlayerData.displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             corePlayerData.overshadowingPlayerData = overshadowingPlayerData;
+            // TODO: raise event?
         }
 
         private void InitializeRejoiningPlayer(uint playerId, CorePlayerData corePlayerData)
@@ -313,10 +315,13 @@ namespace JanSharp.Internal
             if (shouldPersist)
             {
                 corePlayerData.isOffline = true;
+                // TODO: raise event?
                 return;
             }
 
+            // TODO: Isn't this entirely redundant if corePlayerData.IsOvershadowed is true?
             CorePlayerData newlyOvershadowingPlayerData = null;
+            // TODO: I really do not like this loop here. Maybe could use a linked list of players being overshadowed?
             for (int i = 0; i < allPlayerDataCount; i++)
             {
                 CorePlayerData other = allPlayerData[i];
@@ -325,6 +330,7 @@ namespace JanSharp.Internal
                     if (newlyOvershadowingPlayerData != null)
                     {
                         other.overshadowingPlayerData = newlyOvershadowingPlayerData;
+                        // TODO: raise event?
                         continue;
                     }
                     newlyOvershadowingPlayerData = other;
@@ -349,6 +355,8 @@ namespace JanSharp.Internal
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
             corePlayerData.DecrementRefsCount();
+            // TODO: raise event? Or maybe not here but at the end of OnClientLeft?
+            // Depends on how that other usage of this function works.
         }
 
         #region Serialization

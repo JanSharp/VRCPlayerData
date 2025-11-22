@@ -5,6 +5,7 @@
 - [x] ~~fix \[PlayerData\] prefixes missing the Debug postfix~~ they are fine, what am I on about
 - [ ] document the API
 - [ ] document the data life cycle of player data
+  - [ ] maybe suggest completely resetting anything that relates to the player data system, external to it however, whenever an import happened, and reinitialize it using the new imported state. Then continue listening to events again. Oddly enough it seems like the more sane thing to do compared to raising tons of events throughout the import process
 - [ ] make using the player data system an enjoyable experience (aka polish the API)
 - [x] add PlayerDataManagerAPI class, making PlayerDataManager internal, same as Lockstep with LockstepAPI
 - [ ] probably add an api function to get the player data index for some custom player data class, so other system can just index the array directly rather than having to go through the api function which uses a data dictionary every time
