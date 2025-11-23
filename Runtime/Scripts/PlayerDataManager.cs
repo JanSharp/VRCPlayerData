@@ -173,6 +173,41 @@ namespace JanSharp.Internal
             return result;
         }
 
+        public override void DeleteOfflinePlayerData(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerData - corePlayerData != null: {corePlayerData != null}");
+#endif
+            if (corePlayerData == null)
+            {
+                Debug.LogError($"[PlayerDataDebug] Attempt to delete null player data, "
+                    + $"which is invalid. Treat this like an exception.");
+                return;
+            }
+            if (!corePlayerData.isOffline)
+            {
+                Debug.LogError($"[PlayerDataDebug] Attempt to delete non offline player data, "
+                    + $"which is invalid. Treat this like an exception.");
+                return;
+            }
+            ForceUninitPlayerData(corePlayerData);
+            DeleteCorePlayerData(corePlayerData);
+            RaiseOnPlayerDataDeleted(corePlayerData);
+        }
+
+        public override void DeleteAllOfflinePlayerData()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteAllOfflinePlayerData");
+#endif
+            for (int i = allPlayerDataCount - 1; i >= 0; i--)
+            {
+                CorePlayerData corePlayerData = allPlayerData[i];
+                if (corePlayerData.isOffline)
+                    DeleteOfflinePlayerData(corePlayerData);
+            }
+        }
+
         private PlayerData NewPlayerData(string className, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
@@ -347,6 +382,8 @@ namespace JanSharp.Internal
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
+                if (playerData == null)
+                    continue;
                 playerData.OnPlayerDataUninit(force: true);
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;

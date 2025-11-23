@@ -11,6 +11,18 @@ namespace JanSharp
         public abstract PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
         public abstract PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
         /// <summary>
+        /// <para>Raises events, be mindful of recursion.</para>
+        /// </summary>
+        /// <param name="corePlayerData">Must be non <see langword="null"/> and
+        /// <see cref="CorePlayerData.isOffline"/> must be <see langword="true"/>. If either is not the case,
+        /// an error is logged that should be treated as an exception.</param>
+        public abstract void DeleteOfflinePlayerData(CorePlayerData corePlayerData);
+        /// <summary>
+        /// <para>Calls <see cref="DeleteOfflinePlayerData(CorePlayerData)"/> internally which raises events,
+        /// be mindful of recursion.</para>
+        /// </summary>
+        public abstract void DeleteAllOfflinePlayerData();
+        /// <summary>
         /// <para>Usable during the import process.</para>
         /// <para>Specifically starting from when the player data game state has been imported (use the
         /// <see cref="LockstepGameStateDependencyAttribute"/> targeting the
