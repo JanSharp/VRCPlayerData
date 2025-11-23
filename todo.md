@@ -10,3 +10,4 @@
 - [x] add PlayerDataManagerAPI class, making PlayerDataManager internal, same as Lockstep with LockstepAPI
 - [ ] probably add an api function to get the player data index for some custom player data class, so other system can just index the array directly rather than having to go through the api function which uses a data dictionary every time
 - [ ] maybe inform any custom player data that did not get imported as that whole player was not part of the imported data that an import has happened, such that said custom player data has the option to reset itself if appropriate
+- [ ] what if rather than having offline player be potentially just a partial collection of custom player data, keep all custom player data unless all of them agree that it does not need to persist? Pretty sure this would make the API easier to understand too, and it would avoid having to implement a dependency system

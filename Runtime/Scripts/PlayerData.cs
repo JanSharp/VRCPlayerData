@@ -19,15 +19,19 @@ namespace JanSharp
 
         public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }
         /// <summary>
-        /// <para>Raised when this player leaves the world instance while this player is either
-        /// <see cref="CorePlayerData.IsOvershadowed"/> or <see cref="CorePlayerData.IsOvershadowing"/>, as
-        /// in both of these cases the <see cref="PersistPlayerDataWhileOffline"/> check gets bypassed and the
-        /// player data gets deleted unconditionally.</para>
-        /// <para>When not overridden this event gets passed through to <see cref="OnPlayerDataUninit"/> by
-        /// default.</para>
+        /// <para>Raised when this player data gets deleted due to the player leaving the world instance, or
+        /// due to an API call to delete offline player data.</para>
         /// </summary>
-        public virtual void OnPlayerDataForceUninit() => OnPlayerDataUninit();
-        public virtual void OnPlayerDataUninit() { }
+        /// <param name="force">
+        /// <para><see langword="true"/> when the deletion is bypassing the
+        /// <see cref="PersistPlayerDataWhileOffline"/> check, therefore happening unconditionally.</para>
+        /// <para>This happens when this player left the world instance while this player is either
+        /// <see cref="CorePlayerData.IsOvershadowed"/> or <see cref="CorePlayerData.IsOvershadowing"/>, </para>
+        /// <para>Also <see langword="true"/> when this data is getting deleted through an API call to delete
+        /// offline player data, which is to say that this player data
+        /// <see cref="CorePlayerData.isOffline"/>.</para>
+        /// </param>
+        public virtual void OnPlayerDataUninit(bool force) { }
         public virtual void OnPlayerDataLeft() { }
         public virtual void OnPlayerDataRejoin() { }
     }

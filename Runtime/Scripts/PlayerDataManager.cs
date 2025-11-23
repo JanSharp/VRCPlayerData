@@ -347,7 +347,7 @@ namespace JanSharp.Internal
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
-                playerData.OnPlayerDataForceUninit();
+                playerData.OnPlayerDataUninit(force: true);
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
             }
@@ -369,7 +369,7 @@ namespace JanSharp.Internal
                     playerData.OnPlayerDataLeft();
                     continue;
                 }
-                playerData.OnPlayerDataUninit();
+                playerData.OnPlayerDataUninit(force: false);
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
             }
@@ -1008,7 +1008,7 @@ namespace JanSharp.Internal
                         doKeep = true;
                     else
                     {
-                        playerData.OnPlayerDataUninit();
+                        playerData.OnPlayerDataUninit(force: false);
                         playerData.DecrementRefsCount();
                         customPlayerData[j] = null;
                     }
