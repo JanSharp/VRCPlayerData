@@ -17,6 +17,10 @@ namespace JanSharp
         /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
 
+        /// <summary>
+        /// <para><see cref="CorePlayerData.isOffline"/> can be <see langword="true"/> already.</para>
+        /// </summary>
+        /// <param name="isAboutToBeImported"></param>
         public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }
         /// <summary>
         /// <para>Raised when this player data gets deleted due to the player leaving the world instance, or

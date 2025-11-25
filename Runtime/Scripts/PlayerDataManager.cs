@@ -79,12 +79,16 @@ namespace JanSharp.Internal
         private int exportUnknownSizeScopeSizePosition;
         private int importStage = 0;
         private CorePlayerData[] allImportedPlayerData;
+        private CorePlayerData[] newlyCreatedImportedPlayerData;
+        private int newlyCreatedImportedPlayerDataCount;
         private int importedCustomPlayerDataCount;
         private string importSuspendedInternalName;
         private string importSuspendedDisplayName;
         private uint importSuspendedDataVersion;
         private int importSuspendedScopeByteSize;
         private int importSuspendedClassNameIndex;
+        private bool[] importSuspendedPresentClassNames;
+        private bool importSuspendedAnyClassNamePresent;
 
         public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
@@ -176,7 +180,7 @@ namespace JanSharp.Internal
         public override void DeleteOfflinePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerData - corePlayerData != null: {corePlayerData != null}");
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerData");
 #endif
             if (corePlayerData == null)
             {
@@ -190,7 +194,7 @@ namespace JanSharp.Internal
                     + $"which is invalid. Treat this like an exception.");
                 return;
             }
-            ForceUninitPlayerData(corePlayerData);
+            UninitAllPlayerData(corePlayerData, force: true);
             DeleteCorePlayerData(corePlayerData);
             RaiseOnPlayerDataDeleted(corePlayerData);
         }
@@ -291,17 +295,7 @@ namespace JanSharp.Internal
             playerDataByPlayerId.Add(playerId, corePlayerData);
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
-            {
-                PlayerData playerData = customPlayerData[i];
-                if (playerData != null)
-                    playerData.OnPlayerDataRejoin();
-                else
-                {
-                    playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
-                    customPlayerData[i] = playerData;
-                    playerData.OnPlayerDataInit(isAboutToBeImported: false);
-                }
-            }
+                customPlayerData[i].OnPlayerDataRejoin();
             RaiseOnPlayerDataWentOnline(corePlayerData);
         }
 
@@ -356,7 +350,7 @@ namespace JanSharp.Internal
                 // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
                 // Same for when a player was overshadowing another player, as the other player becomes no
                 // longer overshadowed, thus taking the the leaving player's place in playerDataByName.
-                ForceUninitPlayerData(corePlayerData);
+                UninitAllPlayerData(corePlayerData, force: true);
             }
             else
             {
@@ -373,18 +367,16 @@ namespace JanSharp.Internal
             RaiseOnPlayerDataDeleted(corePlayerData);
         }
 
-        private void ForceUninitPlayerData(CorePlayerData corePlayerData)
+        private void UninitAllPlayerData(CorePlayerData corePlayerData, bool force)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  UninitPlayerDataUnconditionally");
+            Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - force: {force}");
 #endif
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = customPlayerData[i];
-                if (playerData == null)
-                    continue;
-                playerData.OnPlayerDataUninit(force: true);
+                playerData.OnPlayerDataUninit(force);
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
             }
@@ -396,21 +388,16 @@ namespace JanSharp.Internal
             Debug.Log($"[PlayerDataDebug] Manager  UninitOrPersistPlayerData");
 #endif
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-            bool shouldPersist = false;
             for (int i = 0; i < playerDataClassNamesCount; i++)
-            {
-                PlayerData playerData = customPlayerData[i];
-                if (playerData.PersistPlayerDataWhileOffline())
+                if (customPlayerData[i].PersistPlayerDataWhileOffline())
                 {
-                    shouldPersist = true;
-                    playerData.OnPlayerDataLeft();
-                    continue;
+                    for (int j = 0; j < playerDataClassNamesCount; j++)
+                        customPlayerData[j].OnPlayerDataLeft();
+                    return true;
                 }
-                playerData.OnPlayerDataUninit(force: false);
-                playerData.DecrementRefsCount();
-                customPlayerData[i] = null;
-            }
-            return shouldPersist;
+
+            UninitAllPlayerData(corePlayerData, force: false);
+            return false;
         }
 
         private void ResolveOvershadowingUponRemoval(CorePlayerData corePlayerData)
@@ -531,12 +518,13 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeserializeCustomPlayerData");
 #endif
-            PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            PlayerData playerData = customPlayerData[classNameIndex];
             if (playerData == null)
             {
                 // Doesn't unconditionally create a new one as this might be a continuation from prev frame.
                 playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
-                corePlayerData.customPlayerData[classNameIndex] = playerData;
+                customPlayerData[classNameIndex] = playerData;
             }
             playerData.Deserialize(isImport: false, importedDataVersion: 0u);
         }
@@ -576,8 +564,7 @@ namespace JanSharp.Internal
             }
 
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-            int length = customPlayerData.Length;
-            while (suspendedIndexInCustomPlayerDataArray < length)
+            while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
             {
                 if (DeSerializationIsRunningLong())
                 {
@@ -794,6 +781,7 @@ namespace JanSharp.Internal
                 return (CorePlayerData)playerDataToken.Reference;
 
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
+            ArrList.Add(ref newlyCreatedImportedPlayerData, ref newlyCreatedImportedPlayerDataCount, corePlayerData);
             corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.displayName = displayName;
             corePlayerData.isOffline = true;
@@ -854,6 +842,9 @@ namespace JanSharp.Internal
                 PlayerData dummyPlayerData = GetDummyCustomPlayerData()[importSuspendedClassNameIndex];
                 if (!dummyPlayerData.SupportsImportExport || dummyPlayerData.LowestSupportedDataVersion > importSuspendedDataVersion)
                     return false;
+
+                importSuspendedPresentClassNames[importSuspendedClassNameIndex] = true;
+                importSuspendedAnyClassNamePresent = true;
             }
 
             int count = allImportedPlayerData.Length;
@@ -865,11 +856,12 @@ namespace JanSharp.Internal
                     return false; // Return value does not matter.
                 }
                 CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
-                PlayerData playerData = corePlayerData.customPlayerData[importSuspendedClassNameIndex];
+                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                PlayerData playerData = customPlayerData[importSuspendedClassNameIndex];
                 if (playerData == null)
                 {
                     playerData = NewPlayerData(playerDataClassNames[importSuspendedClassNameIndex], corePlayerData);
-                    corePlayerData.customPlayerData[importSuspendedClassNameIndex] = playerData;
+                    customPlayerData[importSuspendedClassNameIndex] = playerData;
                     playerData.OnPlayerDataInit(isAboutToBeImported: true);
                 }
                 playerData.Deserialize(isImport: true, importSuspendedDataVersion);
@@ -883,6 +875,39 @@ namespace JanSharp.Internal
             suspendedIndexInCorePlayerDataArray = 0;
 
             return true;
+        }
+
+        private void CleanUpEmptyImportedCorePlayerData()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  CleanUpEmptyImportedCorePlayerData");
+#endif
+            for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
+                DeleteCorePlayerData(newlyCreatedImportedPlayerData[i]);
+        }
+
+        private void ImportPopulateMissingCustomPlayerData(int classNameIndex)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ImportPopulateMissingCustomPlayerData");
+#endif
+            int count = allImportedPlayerData.Length;
+            while (suspendedIndexInCorePlayerDataArray < count)
+            {
+                if (DeSerializationIsRunningLong())
+                    return;
+                CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
+                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                PlayerData playerData = customPlayerData[classNameIndex];
+                if (playerData == null)
+                {
+                    playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
+                    customPlayerData[classNameIndex] = playerData;
+                    playerData.OnPlayerDataInit(isAboutToBeImported: false);
+                }
+                suspendedIndexInCorePlayerDataArray++;
+            }
+            suspendedIndexInCorePlayerDataArray = 0;
         }
 
         private PlayerData[] GetDummyCustomPlayerData()
@@ -962,6 +987,8 @@ namespace JanSharp.Internal
             if (importStage == 0)
             {
                 allImportedPlayerData = new CorePlayerData[lockstep.ReadSmallUInt()];
+                newlyCreatedImportedPlayerData = new CorePlayerData[ArrList.MinCapacity];
+                newlyCreatedImportedPlayerDataCount = 0;
                 importStage++;
             }
 
@@ -982,6 +1009,8 @@ namespace JanSharp.Internal
             if (importStage == 2)
             {
                 importedCustomPlayerDataCount = (int)lockstep.ReadSmallUInt();
+                importSuspendedPresentClassNames = new bool[playerDataClassNamesCount];
+                importSuspendedAnyClassNamePresent = false;
                 importStage++;
             }
 
@@ -1004,6 +1033,40 @@ namespace JanSharp.Internal
                     suspendedIndexInCustomPlayerDataArray++;
                 }
                 suspendedIndexInCustomPlayerDataArray = 0;
+                importStage++;
+            }
+
+            if (importStage == 4)
+            {
+                if (!importSuspendedAnyClassNamePresent)
+                {
+                    CleanUpEmptyImportedCorePlayerData();
+                    importStage++; // Skip stage 5.
+                }
+                importStage++;
+            }
+
+            if (importStage == 5)
+            {
+                while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
+                {
+                    if (importSuspendedPresentClassNames[suspendedIndexInCustomPlayerDataArray])
+                    {
+                        suspendedIndexInCustomPlayerDataArray++;
+                        continue;
+                    }
+                    ImportPopulateMissingCustomPlayerData(suspendedIndexInCustomPlayerDataArray);
+                    if (lockstep.FlaggedToContinueNextFrame)
+                        return;
+                    suspendedIndexInCustomPlayerDataArray++;
+                }
+                suspendedIndexInCustomPlayerDataArray = 0;
+                importStage++;
+            }
+
+            if (importStage == 6)
+            {
+                importSuspendedPresentClassNames = null;
                 importStage = 0;
             }
         }
@@ -1011,47 +1074,47 @@ namespace JanSharp.Internal
         [LockstepEvent(LockstepEventType.OnImportFinished, Order = -10000)]
         public void OnImportFinished()
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnImportFinished");
+#endif
             if (allImportedPlayerData == null) // The imported data did not contain the player data game state.
                 return;
-            CleanUpEmptyImportedCorePlayerData(allImportedPlayerData);
+            // Can clean up now, because any other systems that got imported should have used their own game
+            // state deserialize function in order to finish resolving their associated player data import.
+            CleanUpUnnecessaryOfflineImportedPlayerData(allImportedPlayerData);
+            allImportedPlayerData = null; // Free memory.
             RaiseOnPlayerDataImportFinished();
         }
 
         public void OnLateImportFinished()
         {
-            allImportedPlayerData = null; // Free memory.
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnLateImportFinished");
+#endif
+            // This happens in OnImportFinished with Order 10000 to allow systems using default Order 0 to
+            // still be able to use the import id remapping.
             persistentIdByImportedPersistentId.Clear();
         }
 
-        private void CleanUpEmptyImportedCorePlayerData(CorePlayerData[] allImportedPlayerData)
+        private void CleanUpUnnecessaryOfflineImportedPlayerData(CorePlayerData[] allImportedPlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  CleanUpEmptyImportedCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CleanUpUnnecessaryOfflineImportedPlayerData");
 #endif
-            int count = allImportedPlayerData.Length;
-            for (int i = count - 1; i >= 0; i--)
+            for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
             {
-                CorePlayerData corePlayerData = allImportedPlayerData[i];
-                if (!corePlayerData.isOffline) // Non offline players always have all custom player data.
-                    continue;
+                CorePlayerData corePlayerData = newlyCreatedImportedPlayerData[i];
                 PlayerData[] customPlayerData = corePlayerData.customPlayerData;
                 bool doKeep = false;
                 for (int j = 0; j < playerDataClassNamesCount; j++)
-                {
-                    PlayerData playerData = customPlayerData[j];
-                    if (playerData == null)
-                        continue;
-                    if (playerData.PersistPlayerDataPostImportWhileOffline())
-                        doKeep = true;
-                    else
+                    if (customPlayerData[j].PersistPlayerDataPostImportWhileOffline())
                     {
-                        playerData.OnPlayerDataUninit(force: false);
-                        playerData.DecrementRefsCount();
-                        customPlayerData[j] = null;
+                        doKeep = true;
+                        break;
                     }
-                }
                 if (doKeep)
                     continue;
+                UninitAllPlayerData(corePlayerData, force: false);
                 DeleteCorePlayerData(corePlayerData);
             }
         }
