@@ -117,7 +117,7 @@ namespace JanSharp.Internal
                 return;
             }
             ArrList.Insert(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName, index);
-            ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, playerDataClassName, index);
+            ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, internalName, index);
         }
 
         public override int GetPlayerDataClassNameIndexDynamic(string playerDataClassName)
