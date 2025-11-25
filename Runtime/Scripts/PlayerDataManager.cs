@@ -120,6 +120,11 @@ namespace JanSharp.Internal
             ArrList.Insert(ref playerDataInternalNames, ref playerDataInternalNamesCount, playerDataClassName, index);
         }
 
+        public override int GetPlayerDataClassNameIndexDynamic(string playerDataClassName)
+        {
+            return ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
+        }
+
         public override CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
         {
 #if PLAYER_DATA_DEBUG

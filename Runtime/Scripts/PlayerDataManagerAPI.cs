@@ -4,6 +4,12 @@ namespace JanSharp
     public abstract class PlayerDataManagerAPI : LockstepGameState
     {
         public abstract void RegisterCustomPlayerDataDynamic(string playerDataClassName);
+        /// <summary>
+        /// <para>Usable once <see cref="LockstepAPI.IsInitialized"/> is <see langword="true"/>.</para>
+        /// </summary>
+        /// <param name="playerDataClassName"></param>
+        /// <returns></returns>
+        public abstract int GetPlayerDataClassNameIndexDynamic(string playerDataClassName);
         public abstract CorePlayerData GetCorePlayerDataForPlayerId(uint playerId);
         public abstract CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId);
         public abstract PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId);
@@ -46,6 +52,13 @@ namespace JanSharp
 
     public static class PlayerDataManagerExtensions
     {
+        /// <inheritdoc cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/>
+        public static int GetPlayerDataClassNameIndex<T>(this PlayerDataManagerAPI manager, string playerDataClassName)
+            where T : PlayerData
+        {
+            return manager.GetPlayerDataClassNameIndexDynamic(playerDataClassName);
+        }
+
         public static void RegisterCustomPlayerData<T>(this PlayerDataManagerAPI manager, string playerDataClassName)
             where T : PlayerData
         {
