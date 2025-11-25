@@ -182,6 +182,34 @@ namespace JanSharp.Internal
             return result;
         }
 
+        public override bool TryGetCorePlayerDataForPlayerId(uint playerId, out CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  TryGetCorePlayerDataForPlayerId - playerId: {playerId}");
+#endif
+            if (playerDataByPlayerId.TryGetValue(playerId, out DataToken corePlayerDataToken))
+            {
+                corePlayerData = (CorePlayerData)corePlayerDataToken.Reference;
+                return true;
+            }
+            corePlayerData = null;
+            return false;
+        }
+
+        public override bool TryGetCorePlayerDataForPersistentId(uint persistentId, out CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  TryGetCorePlayerDataForPersistentId - persistentId: {persistentId}");
+#endif
+            if (playerDataByPersistentId.TryGetValue(persistentId, out DataToken corePlayerDataToken))
+            {
+                corePlayerData = (CorePlayerData)corePlayerDataToken.Reference;
+                return true;
+            }
+            corePlayerData = null;
+            return false;
+        }
+
         public override void DeleteOfflinePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG

@@ -16,6 +16,8 @@ namespace JanSharp
         public abstract PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId);
         public abstract PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
         public abstract PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
+        public abstract bool TryGetCorePlayerDataForPlayerId(uint playerId, out CorePlayerData corePlayerData);
+        public abstract bool TryGetCorePlayerDataForPersistentId(uint persistentId, out CorePlayerData corePlayerData);
         /// <summary>
         /// <para>Raises events, be mindful of recursion.</para>
         /// </summary>
