@@ -779,6 +779,9 @@ namespace JanSharp.Internal
             importSuspendedInternalName = lockstep.ReadString();
             importSuspendedDisplayName = lockstep.ReadString();
             importSuspendedDataVersion = lockstep.ReadSmallUInt();
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ImportCustomPlayerDataMetadata (inner) - internalName: {importSuspendedInternalName}, displayName: {importSuspendedDisplayName}, dataVersion: {importSuspendedDataVersion}");
+#endif
         }
 
         private void ExportCorePlayerData(CorePlayerData corePlayerData)
@@ -802,6 +805,9 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = GetOrCreateCorePlayerDataForImport(displayName);
             corePlayerData.importedPersistentId = importedPersistentId;
             persistentIdByImportedPersistentId.Add(importedPersistentId, corePlayerData.persistentId);
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ImportCorePlayerData (inner) - displayName: {displayName}, importedPersistentId: {importedPersistentId}, corePlayerData.persistentId: {corePlayerData.persistentId}");
+#endif
             return corePlayerData;
         }
 
@@ -813,6 +819,9 @@ namespace JanSharp.Internal
             if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
                 return (CorePlayerData)playerDataToken.Reference;
 
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetOrCreateCorePlayerDataForImport (inner) - creating new player data");
+#endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
             ArrList.Add(ref newlyCreatedImportedPlayerData, ref newlyCreatedImportedPlayerDataCount, corePlayerData);
             corePlayerData.persistentId = nextPersistentId++;
@@ -869,10 +878,16 @@ namespace JanSharp.Internal
             else
             {
                 importSuspendedClassNameIndex = ArrList.IndexOf(ref playerDataInternalNames, ref playerDataInternalNamesCount, importSuspendedInternalName);
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData (inner) - importSuspendedClassNameIndex: {importSuspendedClassNameIndex}, playerDataClassName: {(importSuspendedClassNameIndex == -1 ? "<null>" : playerDataClassNames[importSuspendedClassNameIndex])}");
+#endif
                 if (importSuspendedClassNameIndex == -1)
                     return false;
 
                 PlayerData dummyPlayerData = GetDummyCustomPlayerData()[importSuspendedClassNameIndex];
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData (inner) - SupportsImportExport: {dummyPlayerData.SupportsImportExport}, LowestSupportedDataVersion: {dummyPlayerData.LowestSupportedDataVersion}, importSuspendedDataVersion: {importSuspendedDataVersion}");
+#endif
                 if (!dummyPlayerData.SupportsImportExport || dummyPlayerData.LowestSupportedDataVersion > importSuspendedDataVersion)
                     return false;
 
@@ -891,6 +906,9 @@ namespace JanSharp.Internal
                 CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
                 PlayerData[] customPlayerData = corePlayerData.customPlayerData;
                 PlayerData playerData = customPlayerData[importSuspendedClassNameIndex];
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData (inner) - corePlayerData.displayName: {corePlayerData.displayName}");
+#endif
                 if (playerData == null)
                 {
                     playerData = NewPlayerData(playerDataClassNames[importSuspendedClassNameIndex], corePlayerData);
@@ -1022,6 +1040,9 @@ namespace JanSharp.Internal
                 allImportedPlayerData = new CorePlayerData[lockstep.ReadSmallUInt()];
                 newlyCreatedImportedPlayerData = new CorePlayerData[ArrList.MinCapacity];
                 newlyCreatedImportedPlayerDataCount = 0;
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  Import (inner) - allImportedPlayerData.Length: {allImportedPlayerData.Length}");
+#endif
                 importStage++;
             }
 
@@ -1044,6 +1065,9 @@ namespace JanSharp.Internal
                 importedCustomPlayerDataCount = (int)lockstep.ReadSmallUInt();
                 importSuspendedPresentClassNames = new bool[playerDataClassNamesCount];
                 importSuspendedAnyClassNamePresent = false;
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  Import (inner) - importedCustomPlayerDataCount: {importedCustomPlayerDataCount}, playerDataClassNamesCount: {playerDataClassNamesCount}");
+#endif
                 importStage++;
             }
 
@@ -1062,7 +1086,12 @@ namespace JanSharp.Internal
                     if (suspendedInCustomPlayerData)
                         return;
                     if (!success)
+                    {
+#if PLAYER_DATA_DEBUG
+                        Debug.Log($"[PlayerDataDebug] Manager  Import (inner) - discarding {importSuspendedScopeByteSize} bytes");
+#endif
                         lockstep.ReadBytes(importSuspendedScopeByteSize, skip: true);
+                    }
                     suspendedIndexInCustomPlayerDataArray++;
                 }
                 suspendedIndexInCustomPlayerDataArray = 0;
