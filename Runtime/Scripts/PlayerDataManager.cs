@@ -392,6 +392,7 @@ namespace JanSharp.Internal
                 {
                     corePlayerData.isOffline = true;
                     RaiseOnPlayerDataWentOffline(corePlayerData);
+                    corePlayerData.playerId = 0u; // Explicitly after raising the event.
                     return;
                 }
             }
@@ -571,7 +572,6 @@ namespace JanSharp.Internal
                 suspendedInCustomPlayerData = false;
             else
             {
-                lockstep.WriteSmallUInt(corePlayerData.playerId);
                 lockstep.WriteSmallUInt(corePlayerData.persistentId);
 
                 lockstep.WriteFlags(
@@ -583,6 +583,8 @@ namespace JanSharp.Internal
 
                 if (corePlayerData.isOffline)
                     lockstep.WriteString(corePlayerData.displayName);
+                else
+                    lockstep.WriteSmallUInt(corePlayerData.playerId);
                 if (corePlayerData.IsOvershadowed)
                     lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
                 if (corePlayerData.prevOvershadowedPlayerData != null)
@@ -626,9 +628,6 @@ namespace JanSharp.Internal
             else
             {
                 corePlayerData.index = index;
-                uint playerId = lockstep.ReadSmallUInt();
-                playerDataByPlayerId.Add(playerId, corePlayerData);
-                corePlayerData.playerId = playerId;
                 corePlayerData.persistentId = lockstep.ReadSmallUInt();
                 playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
 
@@ -639,7 +638,18 @@ namespace JanSharp.Internal
                     out bool hasNextOvershadowed,
                     out bool isOvershadowing);
 
-                corePlayerData.displayName = corePlayerData.isOffline ? lockstep.ReadString() : lockstep.GetDisplayName(playerId);
+                if (corePlayerData.isOffline)
+                {
+                    corePlayerData.displayName = lockstep.ReadString();
+                    // playerId remains 0u, as it should.
+                }
+                else
+                {
+                    uint playerId = lockstep.ReadSmallUInt();
+                    playerDataByPlayerId.Add(playerId, corePlayerData);
+                    corePlayerData.playerId = playerId;
+                    corePlayerData.displayName = lockstep.GetDisplayName(playerId);
+                }
                 if (isOvershadowed)
                     corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
                 else
