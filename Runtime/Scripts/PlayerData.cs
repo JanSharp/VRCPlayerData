@@ -13,6 +13,8 @@ namespace JanSharp
         public abstract bool PersistPlayerDataWhileOffline();
         /// <summary>
         /// <para>Called in <see cref="LockstepEventType.OnImportFinished"/>.</para>
+        /// <para>Only called on player data that has been newly created through the import that has just
+        /// happened. Any player data which has already existed beforehand is not going to get deleted.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
