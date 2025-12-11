@@ -12,6 +12,23 @@ namespace JanSharp
         /// <param name="playerDataClassName"></param>
         /// <returns></returns>
         public abstract int GetPlayerDataClassNameIndexDynamic(string playerDataClassName);
+        /// <summary>
+        /// <para>A direct reference to the internal array, which is an <see cref="ArrList"/>, which is to say
+        /// that the <see cref="System.Array.Length"/> of this array cannot be trusted.</para>
+        /// <para>It being an <see cref="ArrList"/> also implies that fetching this property and keeping a
+        /// reference to the returned value can end up referring to a stale no longer used array in the
+        /// future, if the arrays has been grown internally since fetching it.</para>
+        /// <para>The actual amount of elements used of this array is defined via
+        /// <see cref="AllCorePlayerDataCount"/>.</para>
+        /// </summary>
+        public abstract CorePlayerData[] AllCorePlayerDataRaw { get; }
+        public abstract int AllCorePlayerDataCount { get; }
+        /// <summary>
+        /// <para>Creates a new array with the length of <see cref="AllCorePlayerDataCount"/> every time the
+        /// property is accessed.</para>
+        /// </summary>
+        public abstract CorePlayerData[] AllCorePlayerData { get; }
+        public abstract CorePlayerData GetCorePlayerDataAt(int index);
         public abstract CorePlayerData GetCorePlayerDataForPlayerId(uint playerId);
         public abstract CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId);
         public abstract PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId);

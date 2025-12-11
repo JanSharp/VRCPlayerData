@@ -90,6 +90,19 @@ namespace JanSharp.Internal
         private bool[] importSuspendedPresentClassNames;
         private bool importSuspendedAnyClassNamePresent;
 
+        public override CorePlayerData[] AllCorePlayerDataRaw => allPlayerData;
+        public override int AllCorePlayerDataCount => allPlayerDataCount;
+        public override CorePlayerData[] AllCorePlayerData
+        {
+            get
+            {
+                CorePlayerData[] allCorePlayerData = new CorePlayerData[allPlayerDataCount];
+                System.Array.Copy(allPlayerData, allCorePlayerData, allPlayerDataCount);
+                return allCorePlayerData;
+            }
+        }
+        public override CorePlayerData GetCorePlayerDataAt(int index) => allPlayerData[index];
+
         public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
