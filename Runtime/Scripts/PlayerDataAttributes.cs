@@ -4,6 +4,28 @@ namespace JanSharp
     public enum PlayerDataEventType
     {
         /// <summary>
+        /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
+        /// <c>-10000</c>, right before the <see cref="PlayerDataManagerAPI"/> gets initialized.</para>
+        /// <para>very first event raised by the player data system.</para>
+        /// <para>Good event to call
+        /// <see cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/> in.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        OnPrePlayerDataManagerInit,
+        /// <summary>
+        /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
+        /// <c>-10000</c>, right after the <see cref="PlayerDataManagerAPI"/> has been initialized and the
+        /// player data for the first player has been created.</para>
+        /// <para></para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        OnPostPlayerDataManagerInit,
+        /// <summary>
+        /// <para>Guaranteed to be raised exactly once for each <see cref="CorePlayerData"/> throughout the
+        /// lifetime of the game state.</para>
+        /// <para>Imports break this life cycle. This event does not get raised for imported player data, get
+        /// all player player data post import inside of <see cref="OnPlayerDataImportFinished"/> or in
+        /// <see cref="LockstepEventType.OnImportFinished"/> with <c>Order > -10000</c>.</para>
         /// <para>Can be created already being in an overshadowed state. When that is the case
         /// <see cref="OnPlayerDataStartedBeingOvershadowed"/> gets raised immediately after this
         /// event.</para>

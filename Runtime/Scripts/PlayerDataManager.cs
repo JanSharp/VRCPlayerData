@@ -122,6 +122,9 @@ namespace JanSharp.Internal
 
         public override int GetPlayerDataClassNameIndexDynamic(string playerDataClassName)
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataClassNameIndexDynamic");
+#endif
             return ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
         }
 
@@ -356,7 +359,9 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  OnInit");
 #endif
+            RaiseOnPrePlayerDataManagerInit();
             InitializePlayer(lockstep.MasterPlayerId);
+            RaiseOnPostPlayerDataManagerInit();
         }
 
         [LockstepEvent(LockstepEventType.OnPreClientJoined, Order = -10000)]
@@ -1268,6 +1273,8 @@ namespace JanSharp.Internal
 
         #region EventDispatcher
 
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPrePlayerDataManagerInitListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPostPlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataCreatedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataDeletedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataWentOfflineListeners;
@@ -1281,6 +1288,18 @@ namespace JanSharp.Internal
 
         private CorePlayerData playerDataForEvent;
         public override CorePlayerData PlayerDataForEvent => playerDataForEvent;
+
+        private void RaiseOnPrePlayerDataManagerInit()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPrePlayerDataManagerInitListeners, nameof(PlayerDataEventType.OnPrePlayerDataManagerInit));
+        }
+
+        private void RaiseOnPostPlayerDataManagerInit()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPostPlayerDataManagerInitListeners, nameof(PlayerDataEventType.OnPostPlayerDataManagerInit));
+        }
 
         private void RaiseOnPlayerDataCreated(CorePlayerData corePlayerData)
         {

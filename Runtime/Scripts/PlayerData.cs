@@ -21,6 +21,12 @@ namespace JanSharp
 
         /// <summary>
         /// <para><see cref="CorePlayerData.isOffline"/> can be <see langword="true"/> already.</para>
+        /// <para>Which other <see cref="PlayerData"/> for this player has already been created and
+        /// initialized is undefined, assume all of it to be <see langword="null"/>.</para>
+        /// <para>For systems requiring cross player data interaction, use the
+        /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/> and
+        /// <see cref="PlayerDataEventType.OnPlayerDataImportFinished"/> events to resolve cross references
+        /// and initialization.</para>
         /// </summary>
         /// <param name="isAboutToBeImported"></param>
         public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }

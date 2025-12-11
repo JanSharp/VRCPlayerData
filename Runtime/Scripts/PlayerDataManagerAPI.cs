@@ -6,6 +6,8 @@ namespace JanSharp
         public abstract void RegisterCustomPlayerDataDynamic(string playerDataClassName);
         /// <summary>
         /// <para>Usable once <see cref="LockstepAPI.IsInitialized"/> is <see langword="true"/>.</para>
+        /// <para>Likely good to call inside of
+        /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/>.</para>
         /// </summary>
         /// <param name="playerDataClassName"></param>
         /// <returns></returns>
