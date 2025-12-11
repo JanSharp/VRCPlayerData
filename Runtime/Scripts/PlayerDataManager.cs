@@ -226,29 +226,61 @@ namespace JanSharp.Internal
             return false;
         }
 
-        public override void DeleteOfflinePlayerData(CorePlayerData corePlayerData)
+        public override void SendDeleteOfflinePlayerDataIA(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  SendDeleteOfflinePlayerDataIA");
+#endif
+            if (!corePlayerData.isOffline)
+                return;
+            lockstep.WriteSmallUInt(corePlayerData.persistentId);
+            lockstep.SendInputAction(deleteOfflinePlayerDataIAId);
+        }
+
+        [HideInInspector][SerializeField] private uint deleteOfflinePlayerDataIAId;
+        [LockstepInputAction(nameof(deleteOfflinePlayerDataIAId))]
+        public void OnDeleteOfflinePlayerDataIA()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnDeleteOfflinePlayerDataIA");
+#endif
+            uint persistentId = lockstep.ReadSmallUInt();
+            if (!TryGetCorePlayerDataForPersistentId(persistentId, out CorePlayerData corePlayerData))
+                return;
+            DeleteOfflinePlayerDataInGS(corePlayerData);
+        }
+
+        public override void DeleteOfflinePlayerDataInGS(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerData");
 #endif
-            if (corePlayerData == null)
-            {
-                Debug.LogError($"[PlayerDataDebug] Attempt to delete null player data, "
-                    + $"which is invalid. Treat this like an exception.");
-                return;
-            }
             if (!corePlayerData.isOffline)
-            {
-                Debug.LogError($"[PlayerDataDebug] Attempt to delete non offline player data, "
-                    + $"which is invalid. Treat this like an exception.");
                 return;
-            }
             UninitAllPlayerData(corePlayerData, force: true);
             DeleteCorePlayerData(corePlayerData);
             RaiseOnPlayerDataDeleted(corePlayerData);
         }
 
-        public override void DeleteAllOfflinePlayerData()
+        public override void SendDeleteAllOfflinePlayerDataIA()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  SendDeleteAllOfflinePlayerDataIA");
+#endif
+            lockstep.SendInputAction(deleteAllOfflinePlayerDataIAId);
+        }
+
+        [HideInInspector][SerializeField] private uint deleteAllOfflinePlayerDataIAId;
+        [LockstepInputAction(nameof(deleteAllOfflinePlayerDataIAId))]
+        public void OnDeleteAllOfflinePlayerDataIA()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnDeleteAllOfflinePlayerDataIA");
+#endif
+            DeleteAllOfflinePlayerDataInGS();
+        }
+
+        public override void DeleteAllOfflinePlayerDataInGS()
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteAllOfflinePlayerData");
@@ -257,7 +289,7 @@ namespace JanSharp.Internal
             {
                 CorePlayerData corePlayerData = allPlayerData[i];
                 if (corePlayerData.isOffline)
-                    DeleteOfflinePlayerData(corePlayerData);
+                    DeleteOfflinePlayerDataInGS(corePlayerData);
             }
         }
 
