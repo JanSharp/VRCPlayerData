@@ -550,6 +550,7 @@ namespace JanSharp.Internal
             int index = corePlayerData.index;
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
+            corePlayerData.isDeleted = true;
             corePlayerData.DecrementRefsCount();
         }
 

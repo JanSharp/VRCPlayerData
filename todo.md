@@ -1,7 +1,7 @@
 
 - [x] probably change the WannaBeClass.Delete calls to DecrementRefsCount
 - [ ] API to create offline player
-  - [ ] Make deletion of player data set a deleted flag, so systems can check if the newly created data has already been deleted by another system inside of the created event
+  - [x] Make deletion of player data set a deleted flag, so systems can check if the newly created data has already been deleted by another system inside of the created event
 - [x] API to delete ~~custom~~ (no, because I'm about to make it so player data either has all or none of the custom player data) player data for offline player
 - [x] ~~fix \[PlayerData\] prefixes missing the Debug postfix~~ they are fine, what am I on about
 - [ ] document the API
