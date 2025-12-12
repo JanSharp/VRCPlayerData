@@ -35,7 +35,21 @@ namespace JanSharp
         public abstract PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId);
         public abstract PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
         public abstract PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
+        /// <summary>
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <param name="corePlayerData">When returning <see langword="true"/> this is non
+        /// <see langword="null"/> and <see cref="CorePlayerData.isDeleted"/> is guaranteed to be
+        /// <see langword="false"/></param>
+        /// <returns></returns>
         public abstract bool TryGetCorePlayerDataForPlayerId(uint playerId, out CorePlayerData corePlayerData);
+        /// <summary>
+        /// </summary>
+        /// <param name="persistentId"></param>
+        /// <param name="corePlayerData">When returning <see langword="true"/> this is non
+        /// <see langword="null"/> and <see cref="CorePlayerData.isDeleted"/> is guaranteed to be
+        /// <see langword="false"/></param>
+        /// <returns></returns>
         public abstract bool TryGetCorePlayerDataForPersistentId(uint persistentId, out CorePlayerData corePlayerData);
         /// <summary>
         /// <para>Sends an input action which ends up running
