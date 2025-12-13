@@ -20,12 +20,14 @@ namespace JanSharp
         /// future, if the arrays has been grown internally since fetching it.</para>
         /// <para>The actual amount of elements used of this array is defined via
         /// <see cref="AllCorePlayerDataCount"/>.</para>
+        /// <para>Game state safe, including order.</para>
         /// </summary>
         public abstract CorePlayerData[] AllCorePlayerDataRaw { get; }
         public abstract int AllCorePlayerDataCount { get; }
         /// <summary>
         /// <para>Creates a new array with the length of <see cref="AllCorePlayerDataCount"/> every time the
         /// property is accessed.</para>
+        /// <para>Game state safe, including order.</para>
         /// </summary>
         public abstract CorePlayerData[] AllCorePlayerData { get; }
         public abstract CorePlayerData GetCorePlayerDataAt(int index);
