@@ -141,6 +141,17 @@ namespace JanSharp.Internal
             return ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
         }
 
+        public override CorePlayerData SendingPlayerData
+        {
+            get
+            {
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  SendingPlayerData.get");
+#endif
+                return (CorePlayerData)playerDataByPlayerId[lockstep.SendingPlayerId].Reference;
+            }
+        }
+
         public override CorePlayerData GetCorePlayerDataForPlayerId(uint playerId)
         {
 #if PLAYER_DATA_DEBUG

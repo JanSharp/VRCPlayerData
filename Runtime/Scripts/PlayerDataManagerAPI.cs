@@ -81,13 +81,22 @@ namespace JanSharp
         /// <see cref="LockstepGameStateDependencyAttribute"/> targeting the
         /// <see cref="PlayerDataManagerAPI"/> class to ensure game states depending on this API import after
         /// the player data game state.)</para>
-        /// <para>And this gets cleared in the <see cref="LockstepEventType.OnImportFinished"/> event with an
-        /// <c>Order</c> of <c>10000</c>.</para>
+        /// <para>And the underlying dictionary gets cleared in the
+        /// <see cref="LockstepEventType.OnImportFinished"/> event with an <c>Order</c> of
+        /// <c>10000</c>.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="importedPersistentId"></param>
         /// <returns></returns>
         public abstract uint GetPersistentIdFromImportedId(uint importedPersistentId);
+
+        /// <summary>
+        /// <para>A helper property using <see cref="LockstepAPI.SendingPlayerId"/> to
+        /// <see cref="GetCorePlayerDataForPlayerId(uint)"/> inside of input actions.</para>
+        /// <para>Usable inside of input actions, same as <see cref="LockstepAPI.SendingPlayerId"/>.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        public abstract CorePlayerData SendingPlayerData { get; }
 
         /// <summary>
         /// <para>Usable inside of the <see cref="PlayerDataEventType"/> events which are tied to player
