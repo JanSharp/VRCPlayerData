@@ -40,7 +40,7 @@ namespace JanSharp
         /// <summary>
         /// </summary>
         /// <param name="playerId"></param>
-        /// <param name="corePlayerData">When returning <see langword="true"/> this is non
+        /// <param name="corePlayerData">When returning <see langword="true"/> this is not
         /// <see langword="null"/> and <see cref="CorePlayerData.isDeleted"/> is guaranteed to be
         /// <see langword="false"/></param>
         /// <returns></returns>
@@ -48,23 +48,38 @@ namespace JanSharp
         /// <summary>
         /// </summary>
         /// <param name="persistentId"></param>
-        /// <param name="corePlayerData">When returning <see langword="true"/> this is non
+        /// <param name="corePlayerData">When returning <see langword="true"/> this is not
         /// <see langword="null"/> and <see cref="CorePlayerData.isDeleted"/> is guaranteed to be
         /// <see langword="false"/></param>
         /// <returns></returns>
         public abstract bool TryGetCorePlayerDataForPersistentId(uint persistentId, out CorePlayerData corePlayerData);
         /// <summary>
         /// <para>Sends an input action which ends up running
+        /// <see cref="CreateOfflinePlayerDataInGS(string)"/>.</para>
+        /// </summary>
+        /// <param name="displayName">Does nothing if this is <see langword="null"/>.</param>
+        public abstract void SendCreateOfflinePlayerDataIA(string displayName);
+        /// <summary>
+        /// <para>Raises events, be mindful of recursion.</para>
+        /// </summary>
+        /// <param name="displayName">Does nothing if this is <see langword="null"/> or a player data with the
+        /// same display name already exists. Offline player data cannot be overshadowed, in other words
+        /// offline player data display names are and must always be unique.</param>
+        /// <returns>The created player data, or <see langword="null"/> if <paramref name="displayName"/> was
+        /// invalid.</returns>
+        public abstract CorePlayerData CreateOfflinePlayerDataInGS(string displayName);
+        /// <summary>
+        /// <para>Sends an input action which ends up running
         /// <see cref="DeleteOfflinePlayerDataInGS(CorePlayerData)"/>.</para>
         /// </summary>
-        /// <param name="corePlayerData">Must be non <see langword="null"/>. Sends the input action even if
+        /// <param name="corePlayerData">Must not be <see langword="null"/>. Sends the input action even if
         /// <see cref="CorePlayerData.isOffline"/> is <see langword="false"/>. By the time the IA runs it
         /// might have turned <see langword="true"/>.</param>
         public abstract void SendDeleteOfflinePlayerDataIA(CorePlayerData corePlayerData);
         /// <summary>
         /// <para>Raises events, be mindful of recursion.</para>
         /// </summary>
-        /// <param name="corePlayerData">Must be non <see langword="null"/>. Does nothing if
+        /// <param name="corePlayerData">Must not be <see langword="null"/>. Does nothing if
         /// <see cref="CorePlayerData.isOffline"/> is <see langword="false"/>.</param>
         public abstract void DeleteOfflinePlayerDataInGS(CorePlayerData corePlayerData);
         /// <summary>

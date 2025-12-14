@@ -237,6 +237,38 @@ namespace JanSharp.Internal
             return false;
         }
 
+        public override void SendCreateOfflinePlayerDataIA(string displayName)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  SendCreateOfflinePlayerDataIA");
+#endif
+            if (displayName == null)
+                return;
+            lockstep.WriteString(displayName);
+            lockstep.SendInputAction(createOfflinePlayerDataIAId);
+        }
+
+        [HideInInspector][SerializeField] private uint createOfflinePlayerDataIAId;
+        [LockstepInputAction(nameof(createOfflinePlayerDataIAId))]
+        public void OnCreateOfflinePlayerDataIA()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnCreateOfflinePlayerDataIA");
+#endif
+            string displayName = lockstep.ReadString();
+            CreateOfflinePlayerDataInGS(displayName);
+        }
+
+        public override CorePlayerData CreateOfflinePlayerDataInGS(string displayName)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  CreateOfflinePlayerDataInGS");
+#endif
+            if (displayName == null || playerDataByName.ContainsKey(displayName))
+                return null;
+            return InitializeOfflinePlayer(displayName);
+        }
+
         public override void SendDeleteOfflinePlayerDataIA(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
@@ -264,7 +296,7 @@ namespace JanSharp.Internal
         public override void DeleteOfflinePlayerDataInGS(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerDataInGS");
 #endif
             if (!corePlayerData.isOffline)
                 return;
@@ -294,7 +326,7 @@ namespace JanSharp.Internal
         public override void DeleteAllOfflinePlayerDataInGS()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  DeleteAllOfflinePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeleteAllOfflinePlayerDataInGS");
 #endif
             for (int i = allPlayerDataCount - 1; i >= 0; i--)
             {
@@ -314,27 +346,66 @@ namespace JanSharp.Internal
             return playerData;
         }
 
-        private CorePlayerData CreateNewCorePlayerData(uint playerId, string displayName)
+        private CorePlayerData CreateNewCorePlayerDataCommon(string displayName)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  CreateNewCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CreateNewCorePlayerDataCommon");
 #endif
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
             corePlayerData.persistentId = nextPersistentId++;
-            corePlayerData.playerId = playerId;
-            corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
             corePlayerData.displayName = displayName;
             PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
             corePlayerData.customPlayerData = customPlayerData;
             corePlayerData.index = allPlayerDataCount;
             ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
             playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
+            return corePlayerData;
+        }
+
+        private CorePlayerData CreateNewOnlineCorePlayerData(uint playerId, string displayName)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  CreateNewOnlineCorePlayerData");
+#endif
+            CorePlayerData corePlayerData = CreateNewCorePlayerDataCommon(displayName);
+            corePlayerData.playerId = playerId;
+            corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
+            return corePlayerData;
+        }
+
+        private CorePlayerData CreateNewOfflineCorePlayerData(string displayName)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  CreateNewOfflineCorePlayerData");
+#endif
+            CorePlayerData corePlayerData = CreateNewCorePlayerDataCommon(displayName);
+            corePlayerData.isOffline = true;
+            playerDataByName.Add(displayName, corePlayerData);
+            return corePlayerData;
+        }
+
+        private void CreatePlayerDataForNewCorePlayerData(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  CreatePlayerDataForNewCorePlayerData");
+#endif
+            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
                 PlayerData playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
                 customPlayerData[i] = playerData;
                 playerData.OnPlayerDataInit(isAboutToBeImported: false);
             }
+        }
+
+        private CorePlayerData InitializeOfflinePlayer(string displayName)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  InitializeOfflinePlayer");
+#endif
+            CorePlayerData corePlayerData = CreateNewOfflineCorePlayerData(displayName);
+            CreatePlayerDataForNewCorePlayerData(corePlayerData);
+            RaiseOnPlayerDataCreated(corePlayerData);
             return corePlayerData;
         }
 
@@ -343,9 +414,10 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  InitializeNewPlayer");
 #endif
-            CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, displayName);
+            CorePlayerData corePlayerData = CreateNewOnlineCorePlayerData(playerId, displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             playerDataByName.Add(displayName, corePlayerData);
+            CreatePlayerDataForNewCorePlayerData(corePlayerData);
             RaiseOnPlayerDataCreated(corePlayerData);
         }
 
@@ -354,13 +426,14 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  InitializeNewOvershadowedPlayer");
 #endif
-            CorePlayerData corePlayerData = CreateNewCorePlayerData(playerId, overshadowingPlayerData.displayName);
+            CorePlayerData corePlayerData = CreateNewOnlineCorePlayerData(playerId, overshadowingPlayerData.displayName);
             playerDataByPlayerId.Add(playerId, corePlayerData);
             corePlayerData.overshadowingPlayerData = overshadowingPlayerData;
             if (!overshadowingPlayerData.IsOvershadowing)
             {
                 overshadowingPlayerData.firstOvershadowedPlayerData = corePlayerData;
                 overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
+                CreatePlayerDataForNewCorePlayerData(corePlayerData);
                 RaiseOnPlayerDataCreated(corePlayerData);
                 RaiseOnPlayerDataStartedBeingOvershadowed(corePlayerData);
                 RaiseOnPlayerDataStartedOvershadowing(overshadowingPlayerData);
@@ -371,6 +444,7 @@ namespace JanSharp.Internal
                 last.nextOvershadowedPlayerData = corePlayerData;
                 corePlayerData.prevOvershadowedPlayerData = last;
                 overshadowingPlayerData.lastOvershadowedPlayerData = corePlayerData;
+                CreatePlayerDataForNewCorePlayerData(corePlayerData);
                 RaiseOnPlayerDataCreated(corePlayerData);
                 RaiseOnPlayerDataStartedBeingOvershadowed(corePlayerData);
             }
@@ -890,22 +964,7 @@ namespace JanSharp.Internal
 #endif
             if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
                 return (CorePlayerData)playerDataToken.Reference;
-
-#if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  GetOrCreateCorePlayerDataForImport (inner) - creating new player data");
-#endif
-            CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
-            ArrList.Add(ref newlyCreatedImportedPlayerData, ref newlyCreatedImportedPlayerDataCount, corePlayerData);
-            corePlayerData.persistentId = nextPersistentId++;
-            corePlayerData.displayName = displayName;
-            corePlayerData.isOffline = true;
-            PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
-            corePlayerData.customPlayerData = customPlayerData;
-            corePlayerData.index = allPlayerDataCount;
-            ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
-            playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
-            playerDataByName.Add(displayName, corePlayerData);
-            return corePlayerData;
+            return CreateNewOfflineCorePlayerData(displayName);
         }
 
         private void ExportAllCustomPlayerData(int classNameIndex)
