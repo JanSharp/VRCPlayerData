@@ -11,17 +11,35 @@ namespace JanSharp
         [System.NonSerialized] public int index;
         /// <summary>
         /// <para><c>0u</c> is an invalid id.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         [System.NonSerialized] public uint persistentId;
         /// <summary>
         /// <para><c>0u</c> is an invalid id.</para>
         /// </summary>
         [System.NonSerialized] public uint importedPersistentId;
+        /// <summary>
+        /// <para>Game state safe.</para>
+        /// </summary>
         [System.NonSerialized] public uint playerId;
         [System.NonSerialized] public VRCPlayerApi playerApi;
+        /// <summary>
+        /// <para>Never <see langword="null"/>.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
         [System.NonSerialized] public string displayName;
+        /// <summary>
+        /// <para>Game state safe.</para>
+        /// </summary>
         [System.NonSerialized] public bool isOffline;
+        /// <summary>
+        /// <para>Game state safe.</para>
+        /// </summary>
         [System.NonSerialized] public bool isDeleted;
+        /// <summary>
+        /// <para>Not game state safe.</para>
+        /// </summary>
+        [System.NonSerialized] public bool isLocal;
 
         /// <summary>
         /// <para>The player overshadowing this player.</para>

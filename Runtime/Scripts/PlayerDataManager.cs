@@ -103,6 +103,13 @@ namespace JanSharp.Internal
         }
         public override CorePlayerData GetCorePlayerDataAt(int index) => allPlayerData[index];
 
+        private uint localPlayerId;
+
+        private void Start()
+        {
+            localPlayerId = (uint)Networking.LocalPlayer.playerId;
+        }
+
         public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
@@ -392,6 +399,7 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerDataCommon(displayName);
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
+            corePlayerData.isLocal = playerId == localPlayerId;
             return corePlayerData;
         }
 
@@ -480,6 +488,7 @@ namespace JanSharp.Internal
             corePlayerData.isOffline = false;
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
+            corePlayerData.isLocal = playerId == localPlayerId;
             playerDataByPlayerId.Add(playerId, corePlayerData);
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
@@ -806,6 +815,8 @@ namespace JanSharp.Internal
                     uint playerId = lockstep.ReadSmallUInt();
                     playerDataByPlayerId.Add(playerId, corePlayerData);
                     corePlayerData.playerId = playerId;
+                    corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
+                    corePlayerData.isLocal = playerId == localPlayerId;
                     corePlayerData.displayName = lockstep.GetDisplayName(playerId);
                 }
                 if (isOvershadowed)
