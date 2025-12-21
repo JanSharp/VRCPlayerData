@@ -170,6 +170,20 @@ namespace JanSharp
         /// <returns></returns>
         public abstract bool TryGetCorePlayerDataForPersistentId(uint persistentId, out CorePlayerData corePlayerData);
         /// <summary>
+        /// <para>Write a reference to a core player data instance to the lockstep write stream.</para>
+        /// <para>Retrieve it using <see cref="ReadCorePlayerDataRef"/> on the receiving end.</para>
+        /// </summary>
+        /// <param name="corePlayerData">Can be <see langword="null"/>.</param>
+        public abstract void WriteCorePlayerDataRef(CorePlayerData corePlayerData);
+        /// <summary>
+        /// <para>Read a reference to a core player data instance from the lockstep read string.</para>
+        /// <para>Can return <see langword="null"/> even if it is guaranteed that the reference passed to
+        /// <see cref="WriteCorePlayerDataRef(CorePlayerData)"/> was not <see langword="null"/> as the player
+        /// data could have been destroyed in the meantime.</para>
+        /// </summary>
+        /// <returns></returns>
+        public abstract CorePlayerData ReadCorePlayerDataRef();
+        /// <summary>
         /// <para>Sends an input action which ends up running
         /// <see cref="CreateOfflinePlayerDataInGS(string)"/>.</para>
         /// </summary>

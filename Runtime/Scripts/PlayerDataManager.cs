@@ -237,6 +237,28 @@ namespace JanSharp.Internal
             return false;
         }
 
+        public override void WriteCorePlayerDataRef(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  WriteCorePlayerDataRef");
+#endif
+            if (corePlayerData == null)
+                lockstep.WriteSmallUInt(0u);
+            else
+                lockstep.WriteSmallUInt(corePlayerData.persistentId);
+        }
+
+        public override CorePlayerData ReadCorePlayerDataRef()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ReadCorePlayerDataRef");
+#endif
+            uint persistentId = lockstep.ReadSmallUInt();
+            return playerDataByPersistentId.TryGetValue(persistentId, out DataToken corePlayerDataToken)
+                ? (CorePlayerData)corePlayerDataToken.Reference
+                : null;
+        }
+
         public override void SendCreateOfflinePlayerDataIA(string displayName)
         {
 #if PLAYER_DATA_DEBUG

@@ -9,7 +9,13 @@ namespace JanSharp
     {
         [HideInInspector][SingletonReference] public PlayerDataManagerAPI manager;
         [System.NonSerialized] public int index;
+        /// <summary>
+        /// <para><c>0u</c> is an invalid id.</para>
+        /// </summary>
         [System.NonSerialized] public uint persistentId;
+        /// <summary>
+        /// <para><c>0u</c> is an invalid id.</para>
+        /// </summary>
         [System.NonSerialized] public uint importedPersistentId;
         [System.NonSerialized] public uint playerId;
         [System.NonSerialized] public VRCPlayerApi playerApi;
