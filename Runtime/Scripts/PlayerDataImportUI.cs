@@ -1,4 +1,5 @@
-﻿using UdonSharp;
+﻿using System.Text;
+using UdonSharp;
 
 namespace JanSharp
 {
@@ -28,14 +29,17 @@ namespace JanSharp
         protected override void OnOptionsEditorShow(LockstepOptionsEditorUI ui, uint importedDataVersion)
         {
             ui.Root.AddChildDynamic(main);
-            main.AddChildDynamic(widgetManager.NewLabel("persistent id - display name").StdMoveWidget());
             int count = (int)lockstep.ReadSmallUInt();
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Count: {count}");
+            sb.AppendLine("persistent id - display name");
             for (int i = 0; i < count; i++)
             {
                 uint importedPersistentId = lockstep.ReadSmallUInt();
                 string displayName = lockstep.ReadString();
-                main.AddChildDynamic(widgetManager.NewLabel($"{importedPersistentId} - {displayName}").StdMoveWidget());
+                sb.AppendLine($"{importedPersistentId} - {displayName}");
             }
+            main.AddChildDynamic(widgetManager.NewLabel(sb.ToString()).StdMoveWidget());
         }
 
         protected override void OnOptionsEditorHide(LockstepOptionsEditorUI ui)
