@@ -96,16 +96,6 @@ namespace JanSharp
         /// <para>Game state safe.</para>
         /// </summary>
         OnPlayerDataOvershadowingPlayerChanged,
-        /// <summary>
-        /// <para>Gets raised inside of <see cref="LockstepEventType.OnImportFinished"/> with an <c>Order</c>
-        /// of <c>-10000</c>, however only if the player data game state was part of the
-        /// <see cref="LockstepAPI.GameStatesBeingImported"/>.</para>
-        /// <para>Gets raised after the player data system itself has finished its whole import process,
-        /// however <see cref="PlayerDataManagerAPI.GetPersistentIdFromImportedId(uint)"/> is still usable
-        /// inside of this event.</para>
-        /// <para>Game state safe.</para>
-        /// </summary>
-        OnPlayerDataImportFinished,
     }
 
     [System.AttributeUsage(System.AttributeTargets.Method, Inherited = true, AllowMultiple = false)]

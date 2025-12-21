@@ -1276,15 +1276,15 @@ namespace JanSharp.Internal
             // state deserialize function in order to finish resolving their associated player data import.
             CleanUpUnnecessaryOfflineImportedPlayerData(allImportedPlayerData);
             allImportedPlayerData = null; // Free memory.
-            RaiseOnPlayerDataImportFinished();
         }
 
-        public void OnLateImportFinished()
+        [LockstepEvent(LockstepEventType.OnPostImportFinished, Order = 10000)]
+        public void OnPostImportFinished()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  OnLateImportFinished");
+            Debug.Log($"[PlayerDataDebug] Manager  OnPostImportFinished");
 #endif
-            // This happens in OnImportFinished with Order 10000 to allow systems using default Order 0 to
+            // This happens in OnPostImportFinished with Order 10000 to allow systems using default Order 0 to
             // still be able to use the import id remapping.
             persistentIdByImportedPersistentId.Clear();
         }
@@ -1294,6 +1294,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CleanUpUnnecessaryOfflineImportedPlayerData");
 #endif
+            // TODO: Spread out across frames?
             for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
             {
                 CorePlayerData corePlayerData = newlyCreatedImportedPlayerData[i];
@@ -1400,7 +1401,6 @@ namespace JanSharp.Internal
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStartedBeingOvershadowedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataStoppedBeingOvershadowedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataOvershadowingPlayerChangedListeners;
-        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataImportFinishedListeners;
 
         private CorePlayerData playerDataForEvent;
         public override CorePlayerData PlayerDataForEvent => playerDataForEvent;
@@ -1487,12 +1487,6 @@ namespace JanSharp.Internal
             // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
             JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataOvershadowingPlayerChangedListeners, nameof(PlayerDataEventType.OnPlayerDataOvershadowingPlayerChanged));
             playerDataForEvent = null; // To prevent misuse of the API.
-        }
-
-        private void RaiseOnPlayerDataImportFinished()
-        {
-            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
-            JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataImportFinishedListeners, nameof(PlayerDataEventType.OnPlayerDataImportFinished));
         }
 
         #endregion
