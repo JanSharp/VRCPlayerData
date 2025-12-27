@@ -7,7 +7,13 @@ namespace JanSharp
         /// <c>-10000</c>, right before the <see cref="PlayerDataManagerAPI"/> gets initialized.</para>
         /// <para>very first event raised by the player data system.</para>
         /// <para>Good event to call
-        /// <see cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/> in.</para>
+        /// <see cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/> or
+        /// <see cref="PlayerDataManagerExtensions.GetPlayerDataClassNameIndex{T}(PlayerDataManagerAPI, string)"/>
+        /// in.</para>
+        /// <para>Make sure to also call those in <see cref="LockstepEventType.OnClientBeginCatchUp"/> when
+        /// doing so, since <see cref="LockstepEventType.OnInit"/> only runs on the initial client.</para>
+        /// <para>Unlike <see cref="LockstepEventType.OnInit"/>,
+        /// <see cref="LockstepAPI.FlagToContinueNextFrame"/> cannot be used inside of this event.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         OnPrePlayerDataManagerInit,
@@ -15,7 +21,8 @@ namespace JanSharp
         /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
         /// <c>-10000</c>, right after the <see cref="PlayerDataManagerAPI"/> has been initialized and the
         /// player data for the first player has been created.</para>
-        /// <para></para>
+        /// <para>Unlike <see cref="LockstepEventType.OnInit"/>,
+        /// <see cref="LockstepAPI.FlagToContinueNextFrame"/> cannot be used inside of this event.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         OnPostPlayerDataManagerInit,
@@ -124,6 +131,8 @@ namespace JanSharp
         /// <para>Usable once <see cref="LockstepAPI.IsInitialized"/> is <see langword="true"/>.</para>
         /// <para>Likely good to call inside of
         /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/>.</para>
+        /// <para>Make sure to also call this in <see cref="LockstepEventType.OnClientBeginCatchUp"/> when
+        /// doing so, since <see cref="LockstepEventType.OnInit"/> only runs on the initial client.</para>
         /// </summary>
         /// <param name="playerDataClassName"></param>
         /// <returns></returns>
