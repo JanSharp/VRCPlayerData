@@ -1297,11 +1297,11 @@ namespace JanSharp.Internal
             }
         }
 
-        [LockstepEvent(LockstepEventType.OnImportFinished, Order = -10000)]
-        public void OnImportFinished()
+        [LockstepEvent(LockstepEventType.OnImportFinishingUp, Order = -10000)]
+        public void OnImportFinishingUp()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  OnImportFinished");
+            Debug.Log($"[PlayerDataDebug] Manager  OnImportFinishingUp");
 #endif
             if (allImportedPlayerData == null) // The imported data did not contain the player data game state.
                 return;
@@ -1311,13 +1311,13 @@ namespace JanSharp.Internal
             allImportedPlayerData = null; // Free memory.
         }
 
-        [LockstepEvent(LockstepEventType.OnPostImportFinished, Order = 10000)]
-        public void OnPostImportFinished()
+        [LockstepEvent(LockstepEventType.OnImportFinished, Order = 10000)]
+        public void OnImportFinished()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  OnPostImportFinished");
+            Debug.Log($"[PlayerDataDebug] Manager  OnImportFinished");
 #endif
-            // This happens in OnPostImportFinished with Order 10000 to allow systems using default Order 0 to
+            // This happens in OnImportFinished with Order 10000 to allow systems using default Order 0 to
             // still be able to use the import id remapping.
             persistentIdByImportedPersistentId.Clear();
         }

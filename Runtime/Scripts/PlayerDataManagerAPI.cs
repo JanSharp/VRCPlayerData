@@ -29,9 +29,10 @@ namespace JanSharp
         /// <summary>
         /// <para>Guaranteed to be raised exactly once for each <see cref="CorePlayerData"/> throughout the
         /// lifetime of the game state.</para>
-        /// <para>Imports break this life cycle. This event does not get raised for imported player data, get
-        /// all player player data post import inside of <see cref="OnPlayerDataImportFinished"/> or in
-        /// <see cref="LockstepEventType.OnImportFinished"/> with <c>Order > -10000</c>.</para>
+        /// <para>Imports break this life cycle. This event does not get raised for imported player data. Get
+        /// all player player data post import inside of <see cref="LockstepEventType.OnImportFinishingUp"/>
+        /// with <c>Order</c> greater than <c>-10000</c>, or in
+        /// <see cref="LockstepEventType.OnImportFinished"/> (with any <c>Order</c>).</para>
         /// <para>Can be created already being in an overshadowed state. When that is the case
         /// <see cref="OnPlayerDataStartedBeingOvershadowed"/> gets raised immediately after this
         /// event.</para>
@@ -240,6 +241,8 @@ namespace JanSharp
         /// <para>And the underlying dictionary gets cleared in the
         /// <see cref="LockstepEventType.OnImportFinished"/> event with an <c>Order</c> of
         /// <c>10000</c>.</para>
+        /// <para>Note how this is available throughout the entirety of
+        /// <see cref="LockstepEventType.OnImportFinishingUp"/>.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="importedPersistentId"></param>
