@@ -127,9 +127,20 @@ namespace JanSharp
     [SingletonScript("28a5e083347ce2753aa92dfda01bef32")] // Runtime/Prefabs/PlayerDataManager.prefab
     public abstract class PlayerDataManagerAPI : LockstepGameState
     {
+        /// <summary>
+        /// <para>Gets set to true immediately after
+        /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/> got raised.</para>
+        /// <para>This is therefore <see langword="true"/> inside of every other event raised by the player
+        /// data system, including the <see cref="PlayerDataEventType.OnPlayerDataCreated"/> for the very
+        /// first client.</para>
+        /// <para>Usable any time.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        public abstract bool IsInitialized { get; }
         public abstract void RegisterCustomPlayerDataDynamic(string playerDataClassName);
         /// <summary>
-        /// <para>Usable once <see cref="LockstepAPI.IsInitialized"/> is <see langword="true"/>.</para>
+        /// <para>Usable inside of <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/> and once
+        /// <see cref="IsInitialized"/> is <see langword="true"/>.</para>
         /// <para>Likely good to call inside of
         /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/>.</para>
         /// <para>Make sure to also call this in <see cref="LockstepEventType.OnClientBeginCatchUp"/> when
@@ -201,6 +212,7 @@ namespace JanSharp
         public abstract void SendCreateOfflinePlayerDataIA(string displayName);
         /// <summary>
         /// <para>Raises events, be mindful of recursion.</para>
+        /// <para>Usable once <see cref="IsInitialized"/> is <see langword="true"/>.</para>
         /// </summary>
         /// <param name="displayName">Does nothing if this is <see langword="null"/> or a player data with the
         /// same display name already exists. Offline player data cannot be overshadowed, in other words
@@ -218,6 +230,7 @@ namespace JanSharp
         public abstract void SendDeleteOfflinePlayerDataIA(CorePlayerData corePlayerData);
         /// <summary>
         /// <para>Raises events, be mindful of recursion.</para>
+        /// <para>Usable once <see cref="IsInitialized"/> is <see langword="true"/>.</para>
         /// </summary>
         /// <param name="corePlayerData">Must not be <see langword="null"/>. Does nothing if
         /// <see cref="CorePlayerData.isOffline"/> is <see langword="false"/>.</param>
@@ -230,6 +243,7 @@ namespace JanSharp
         /// <summary>
         /// <para>Calls <see cref="DeleteOfflinePlayerDataInGS(CorePlayerData)"/> internally which raises events,
         /// be mindful of recursion.</para>
+        /// <para>Usable once <see cref="IsInitialized"/> is <see langword="true"/>.</para>
         /// </summary>
         public abstract void DeleteAllOfflinePlayerDataInGS();
         /// <summary>

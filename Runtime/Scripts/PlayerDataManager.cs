@@ -105,6 +105,9 @@ namespace JanSharp.Internal
 
         private uint localPlayerId;
 
+        private bool isInitialized = false;
+        public override bool IsInitialized => isInitialized;
+
         private void Start()
         {
             localPlayerId = (uint)Networking.LocalPlayer.playerId;
@@ -293,7 +296,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CreateOfflinePlayerDataInGS");
 #endif
-            if (displayName == null || playerDataByName.ContainsKey(displayName))
+            if (!isInitialized || displayName == null || playerDataByName.ContainsKey(displayName))
                 return null;
             return InitializeOfflinePlayer(displayName);
         }
@@ -327,8 +330,8 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteOfflinePlayerDataInGS");
 #endif
-            if (!corePlayerData.isOffline)
-                return;
+            if (!isInitialized || !corePlayerData.isOffline)
+                return; // There cannot be any offline player data while isInitialized is false anyway.
             UninitAllPlayerData(corePlayerData, force: true);
             DeleteCorePlayerData(corePlayerData);
             RaiseOnPlayerDataDeleted(corePlayerData);
@@ -357,6 +360,8 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteAllOfflinePlayerDataInGS");
 #endif
+            if (!isInitialized) // There cannot be any offline player data while isInitialized is false anyway.
+                return;
             for (int i = allPlayerDataCount - 1; i >= 0; i--)
             {
                 CorePlayerData corePlayerData = allPlayerData[i];
@@ -521,6 +526,7 @@ namespace JanSharp.Internal
             Debug.Log($"[PlayerDataDebug] Manager  OnInit");
 #endif
             RaiseOnPrePlayerDataManagerInit();
+            isInitialized = true;
             InitializePlayer(lockstep.MasterPlayerId);
             RaiseOnPostPlayerDataManagerInit();
         }
