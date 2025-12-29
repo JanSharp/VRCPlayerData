@@ -143,8 +143,9 @@ namespace JanSharp
         /// <see cref="IsInitialized"/> is <see langword="true"/>.</para>
         /// <para>Likely good to call inside of
         /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/>.</para>
-        /// <para>Make sure to also call this in <see cref="LockstepEventType.OnClientBeginCatchUp"/> when
-        /// doing so, since <see cref="LockstepEventType.OnInit"/> only runs on the initial client.</para>
+        /// <para>Make sure to also call this in <see cref="LockstepEventType.OnClientBeginCatchUp"/> or in
+        /// game state deserialization when doing so, since <see cref="LockstepEventType.OnInit"/> only runs
+        /// on the initial client.</para>
         /// </summary>
         /// <param name="playerDataClassName"></param>
         /// <returns></returns>
