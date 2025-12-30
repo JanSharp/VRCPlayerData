@@ -3,15 +3,30 @@ namespace JanSharp
     public enum PlayerDataEventType
     {
         /// <summary>
-        /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
-        /// <c>-10000</c>, right before the <see cref="PlayerDataManagerAPI"/> gets initialized.</para>
-        /// <para>very first event raised by the player data system.</para>
-        /// <para>Good event to call
+        /// <para>Raised inside of unity's <c>Start</c> event, this is the event to call
+        /// <see cref="PlayerDataManagerAPI.RegisterCustomPlayerDataDynamic(string)"/> or
+        /// <see cref="PlayerDataManagerExtensions.RegisterCustomPlayerData{T}(PlayerDataManagerAPI, string)"/>
+        /// in.</para>
+        /// <para>Not game state safe.</para>
+        /// </summary>
+        OnRegisterCustomPlayerData,
+        /// <summary>
+        /// <para>Raised inside of unity's <c>Start</c> event, immediately after
+        /// <see cref="OnRegisterCustomPlayerData"/>, therefore by the time this event runs all
+        /// <see cref="PlayerDataManagerAPI.RegisterCustomPlayerDataDynamic(string)"/> and
+        /// <see cref="PlayerDataManagerExtensions.RegisterCustomPlayerData{T}(PlayerDataManagerAPI, string)"/>
+        /// calls have already happened.</para>
+        /// <para>This is the event to call
         /// <see cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/> or
         /// <see cref="PlayerDataManagerExtensions.GetPlayerDataClassNameIndex{T}(PlayerDataManagerAPI, string)"/>
         /// in.</para>
-        /// <para>Make sure to also call those in <see cref="LockstepEventType.OnClientBeginCatchUp"/> when
-        /// doing so, since <see cref="LockstepEventType.OnInit"/> only runs on the initial client.</para>
+        /// <para>Not game state safe.</para>
+        /// </summary>
+        OnAllCustomPlayerDataRegistered,
+        /// <summary>
+        /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
+        /// <c>-10000</c>, right before the <see cref="PlayerDataManagerAPI"/> gets initialized.</para>
+        /// <para>very first event raised by the player data system.</para>
         /// <para>Unlike <see cref="LockstepEventType.OnInit"/>,
         /// <see cref="LockstepAPI.FlagToContinueNextFrame"/> cannot be used inside of this event.</para>
         /// <para>Game state safe.</para>
@@ -139,13 +154,9 @@ namespace JanSharp
         public abstract bool IsInitialized { get; }
         public abstract void RegisterCustomPlayerDataDynamic(string playerDataClassName);
         /// <summary>
-        /// <para>Usable inside of <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/> and once
-        /// <see cref="IsInitialized"/> is <see langword="true"/>.</para>
-        /// <para>Likely good to call inside of
-        /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/>.</para>
-        /// <para>Make sure to also call this in <see cref="LockstepEventType.OnClientBeginCatchUp"/> or in
-        /// game state deserialization when doing so, since <see cref="LockstepEventType.OnInit"/> only runs
-        /// on the initial client.</para>
+        /// <para>Usable inside of <see cref="PlayerDataEventType.OnAllCustomPlayerDataRegistered"/> and
+        /// onwards.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="playerDataClassName"></param>
         /// <returns></returns>

@@ -111,6 +111,8 @@ namespace JanSharp.Internal
         private void Start()
         {
             localPlayerId = (uint)Networking.LocalPlayer.playerId;
+            RaiseOnRegisterCustomPlayerData();
+            RaiseOnAllCustomPlayerDataRegistered();
         }
 
         public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
@@ -1429,6 +1431,8 @@ namespace JanSharp.Internal
 
         #region EventDispatcher
 
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onRegisterCustomPlayerDataListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onAllCustomPlayerDataRegisteredListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPrePlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPostPlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataCreatedListeners;
@@ -1443,6 +1447,18 @@ namespace JanSharp.Internal
 
         private CorePlayerData playerDataForEvent;
         public override CorePlayerData PlayerDataForEvent => playerDataForEvent;
+
+        private void RaiseOnRegisterCustomPlayerData()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onRegisterCustomPlayerDataListeners, nameof(PlayerDataEventType.OnRegisterCustomPlayerData));
+        }
+
+        private void RaiseOnAllCustomPlayerDataRegistered()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onAllCustomPlayerDataRegisteredListeners, nameof(PlayerDataEventType.OnAllCustomPlayerDataRegistered));
+        }
 
         private void RaiseOnPrePlayerDataManagerInit()
         {

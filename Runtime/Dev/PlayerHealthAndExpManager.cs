@@ -22,10 +22,15 @@ namespace JanSharp
         private void Start()
         {
             localPlayer = Networking.LocalPlayer;
-            playerDataManager.RegisterCustomPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData));
             boneAttachmentManager.AttachToLocalTrackingData(VRCPlayerApi.TrackingDataType.Head, localPlayerHead);
             localPlayerHead.localPosition = Vector3.zero;
             localPlayerHead.localRotation = Quaternion.identity;
+        }
+
+        [PlayerDataEvent(PlayerDataEventType.OnRegisterCustomPlayerData)]
+        public void OnRegisterCustomPlayerData()
+        {
+            playerDataManager.RegisterCustomPlayerData<PlayerHealthAndExpData>(nameof(PlayerHealthAndExpData));
         }
 
         private PlayerHealthAndExpData GetPlayerData(uint playerId)
