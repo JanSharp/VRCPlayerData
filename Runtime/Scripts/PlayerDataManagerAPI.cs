@@ -276,6 +276,11 @@ namespace JanSharp
         public abstract uint GetPersistentIdFromImportedId(uint importedPersistentId);
 
         /// <summary>
+        /// <para>Not game state safe.</para>
+        /// </summary>
+        public abstract CorePlayerData LocalPlayerData { get; }
+
+        /// <summary>
         /// <para>A helper property using <see cref="LockstepAPI.SendingPlayerId"/> to
         /// <see cref="GetCorePlayerDataForPlayerId(uint)"/> inside of input actions.</para>
         /// <para>Usable inside of input actions, same as <see cref="LockstepAPI.SendingPlayerId"/>.</para>

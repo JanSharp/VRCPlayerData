@@ -153,6 +153,9 @@ namespace JanSharp.Internal
             return ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
         }
 
+        private CorePlayerData localPlayerData;
+        public override CorePlayerData LocalPlayerData => localPlayerData;
+
         public override CorePlayerData SendingPlayerData
         {
             get
@@ -406,7 +409,10 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = CreateNewCorePlayerDataCommon(displayName);
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
-            corePlayerData.isLocal = playerId == localPlayerId;
+            bool isLocal = playerId == localPlayerId;
+            corePlayerData.isLocal = isLocal;
+            if (isLocal)
+                localPlayerData = corePlayerData;
             return corePlayerData;
         }
 
@@ -495,7 +501,10 @@ namespace JanSharp.Internal
             corePlayerData.isOffline = false;
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
-            corePlayerData.isLocal = playerId == localPlayerId;
+            bool isLocal = playerId == localPlayerId;
+            corePlayerData.isLocal = isLocal;
+            if (isLocal)
+                localPlayerData = corePlayerData;
             playerDataByPlayerId.Add(playerId, corePlayerData);
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
@@ -824,7 +833,10 @@ namespace JanSharp.Internal
                     playerDataByPlayerId.Add(playerId, corePlayerData);
                     corePlayerData.playerId = playerId;
                     corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
-                    corePlayerData.isLocal = playerId == localPlayerId;
+                    bool isLocal = playerId == localPlayerId;
+                    corePlayerData.isLocal = isLocal;
+                    if (isLocal)
+                        localPlayerData = corePlayerData;
                     corePlayerData.displayName = lockstep.GetDisplayName(playerId);
                 }
                 if (isOvershadowed)
