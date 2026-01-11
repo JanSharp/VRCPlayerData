@@ -27,12 +27,14 @@ namespace JanSharp
         /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/> and
         /// <see cref="PlayerDataEventType.OnPlayerDataImportFinished"/> events to resolve cross references
         /// and initialization.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="isAboutToBeImported"></param>
         public virtual void OnPlayerDataInit(bool isAboutToBeImported) { }
         /// <summary>
         /// <para>Raised when this player data gets deleted due to the player leaving the world instance, or
         /// due to an API call to delete offline player data.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="force">
         /// <para><see langword="true"/> when the deletion is bypassing the
