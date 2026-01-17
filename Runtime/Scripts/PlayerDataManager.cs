@@ -1415,6 +1415,7 @@ namespace JanSharp.Internal
                 nextPersistentId = lockstep.ReadSmallUInt();
             }
             DeserializeAllCorePlayerData();
+            isInitialized = true;
             return null;
         }
 
