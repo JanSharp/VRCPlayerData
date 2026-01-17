@@ -338,8 +338,7 @@ namespace JanSharp.Internal
             if (!isInitialized || !corePlayerData.isOffline)
                 return; // There cannot be any offline player data while isInitialized is false anyway.
             UninitAllPlayerData(corePlayerData, force: true);
-            DeleteCorePlayerData(corePlayerData);
-            RaiseOnPlayerDataDeleted(corePlayerData);
+            DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
         public override void SendDeleteAllOfflinePlayerDataIA()
@@ -580,8 +579,7 @@ namespace JanSharp.Internal
                 }
             }
 
-            DeleteCorePlayerData(corePlayerData);
-            RaiseOnPlayerDataDeleted(corePlayerData);
+            DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
         private void UninitAllPlayerData(CorePlayerData corePlayerData, bool force)
@@ -673,7 +671,7 @@ namespace JanSharp.Internal
             while (next != null);
         }
 
-        private void DeleteCorePlayerData(CorePlayerData corePlayerData)
+        private void DeleteCorePlayerData(CorePlayerData corePlayerData, bool doRaiseEvent)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeleteCorePlayerData");
@@ -684,6 +682,8 @@ namespace JanSharp.Internal
             allPlayerData[index] = allPlayerData[--allPlayerDataCount];
             allPlayerData[index].index = index;
             corePlayerData.isDeleted = true;
+            if (doRaiseEvent)
+                RaiseOnPlayerDataDeleted(corePlayerData);
             corePlayerData.DecrementRefsCount();
         }
 
@@ -1118,7 +1118,7 @@ namespace JanSharp.Internal
             Debug.Log($"[PlayerDataDebug] Manager  CleanUpEmptyImportedCorePlayerData");
 #endif
             for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
-                DeleteCorePlayerData(newlyCreatedImportedPlayerData[i]);
+                DeleteCorePlayerData(newlyCreatedImportedPlayerData[i], doRaiseEvent: false);
         }
 
         private void ImportPopulateMissingCustomPlayerData(int classNameIndex)
@@ -1362,7 +1362,7 @@ namespace JanSharp.Internal
                 if (doKeep)
                     continue;
                 UninitAllPlayerData(corePlayerData, force: false);
-                DeleteCorePlayerData(corePlayerData);
+                DeleteCorePlayerData(corePlayerData, doRaiseEvent: false);
             }
         }
 
