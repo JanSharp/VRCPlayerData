@@ -274,6 +274,23 @@ namespace JanSharp.Internal
                 : null;
         }
 
+        public override CorePlayerData ReadCorePlayerDataRef(bool isImport)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ReadCorePlayerDataRef");
+#endif
+            uint persistentId = lockstep.ReadSmallUInt();
+            if (isImport)
+            {
+                if (persistentId != 0u)
+                    return null;
+                persistentId = persistentIdByImportedPersistentId[persistentId].UInt;
+            }
+            return playerDataByPersistentId.TryGetValue(persistentId, out DataToken corePlayerDataToken)
+                ? (CorePlayerData)corePlayerDataToken.Reference
+                : null;
+        }
+
         public override void SendCreateOfflinePlayerDataIA(string displayName)
         {
 #if PLAYER_DATA_DEBUG

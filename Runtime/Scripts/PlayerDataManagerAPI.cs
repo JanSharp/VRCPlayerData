@@ -212,10 +212,14 @@ namespace JanSharp
         /// <para>Read a reference to a core player data instance from the lockstep read string.</para>
         /// <para>Can return <see langword="null"/> even if it is guaranteed that the reference passed to
         /// <see cref="WriteCorePlayerDataRef(CorePlayerData)"/> was not <see langword="null"/> as the player
-        /// data could have been destroyed in the meantime.</para>
+        /// data could have been deleted in the meantime.</para>
         /// </summary>
         /// <returns></returns>
         public abstract CorePlayerData ReadCorePlayerDataRef();
+        /// <inheritdoc cref="ReadCorePlayerDataRef()"/>
+        /// <param name="isImport">When <see langword="true"/>
+        /// <see cref="GetPersistentIdFromImportedId(uint)"/> will be used to resolve the reference.</param>
+        public abstract CorePlayerData ReadCorePlayerDataRef(bool isImport);
         /// <summary>
         /// <para>Sends an input action which ends up running
         /// <see cref="CreateOfflinePlayerDataInGS(string)"/>.</para>
