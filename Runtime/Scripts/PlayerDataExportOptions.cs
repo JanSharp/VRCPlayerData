@@ -3,7 +3,7 @@
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class PlayerDataImportOptions : LockstepGameStateOptionsData
+    public class PlayerDataExportOptions : LockstepGameStateOptionsData
     {
         public override bool SupportsImportExport => true;
         public override uint DataVersion => 0u;
@@ -11,7 +11,7 @@ namespace JanSharp
 
         public override LockstepGameStateOptionsData Clone()
         {
-            PlayerDataImportOptions clone = WannaBeClasses.New<PlayerDataImportOptions>(nameof(PlayerDataImportOptions));
+            PlayerDataExportOptions clone = WannaBeClasses.New<PlayerDataExportOptions>(nameof(PlayerDataExportOptions));
             return clone;
         }
 
