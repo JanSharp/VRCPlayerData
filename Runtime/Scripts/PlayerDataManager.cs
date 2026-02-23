@@ -42,8 +42,10 @@ namespace JanSharp.Internal
         /// </summary>
         [HideInInspector][SerializeField] private string[] internalNameByClassNameValues;
 
+        private const uint InvalidPersistentId = 0u;
+
         /// <summary>
-        /// <para><c>0u</c> is an invalid id.</para>
+        /// <para><c>0u</c> (see <see cref="InvalidPersistentId"/>) is an invalid id.</para>
         /// </summary>
         private uint nextPersistentId = 1u;
         /// <summary>
@@ -259,7 +261,7 @@ namespace JanSharp.Internal
             Debug.Log($"[PlayerDataDebug] Manager  WriteCorePlayerDataRef");
 #endif
             if (corePlayerData == null)
-                lockstep.WriteSmallUInt(0u);
+                lockstep.WriteSmallUInt(InvalidPersistentId);
             else
                 lockstep.WriteSmallUInt(corePlayerData.persistentId);
         }
@@ -283,7 +285,7 @@ namespace JanSharp.Internal
             uint persistentId = lockstep.ReadSmallUInt();
             if (isImport)
             {
-                if (persistentId != 0u)
+                if (persistentId != InvalidPersistentId)
                     return null;
                 persistentId = persistentIdByImportedPersistentId[persistentId].UInt;
             }
@@ -1337,6 +1339,20 @@ namespace JanSharp.Internal
             if (importStage == 6)
             {
                 importSuspendedPresentClassNames = null;
+                importStage++;
+            }
+
+            if (importStage == 7)
+            {
+                for (int i = 0; i < allPlayerDataCount; i++)
+                {
+                    CorePlayerData player = allPlayerData[i];
+                    if (player.importedPersistentId != InvalidPersistentId)
+                        continue;
+                    PlayerData[] customPlayerData = player.customPlayerData;
+                    for (int j = 0; j < playerDataClassNamesCount; j++)
+                        customPlayerData[j].OnNotPartOfImportedData();
+                }
                 importStage = 0;
             }
         }
@@ -1361,8 +1377,12 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  OnImportFinished");
 #endif
+            if (!IsPartOfCurrentImport)
+                return;
             // This happens in OnImportFinished with Order 10000 to allow systems using default Order 0 to
             // still be able to use the import id remapping.
+            for (int i = 0; i < allPlayerDataCount; i++)
+                allPlayerData[i].importedPersistentId = InvalidPersistentId;
             persistentIdByImportedPersistentId.Clear();
         }
 
@@ -1393,10 +1413,10 @@ namespace JanSharp.Internal
         public override uint GetPersistentIdFromImportedId(uint importedPersistentId)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(importedPersistentId == 0u ? 0u : persistentIdByImportedPersistentId[importedPersistentId].UInt)}");
+            Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(importedPersistentId == InvalidPersistentId ? InvalidPersistentId : persistentIdByImportedPersistentId[importedPersistentId].UInt)}");
 #endif
-            return importedPersistentId == 0u
-                ? 0u
+            return importedPersistentId == InvalidPersistentId
+                ? InvalidPersistentId
                 : persistentIdByImportedPersistentId[importedPersistentId].UInt;
         }
 

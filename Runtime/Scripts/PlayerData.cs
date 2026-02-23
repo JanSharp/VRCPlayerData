@@ -20,13 +20,19 @@ namespace JanSharp
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
 
         /// <summary>
+        /// <para>Called inside of player data game state deserialization after all other player data has been
+        /// imported on all player data which was not part of the imported data.</para>s
+        /// </summary>
+        public virtual void OnNotPartOfImportedData() { }
+        /// <summary>
         /// <para><see cref="CorePlayerData.isOffline"/> can be <see langword="true"/> already.</para>
         /// <para>Which other <see cref="PlayerData"/> for this player has already been created and
         /// initialized is undefined, assume all of it to be <see langword="null"/>.</para>
         /// <para>For systems requiring cross player data interaction, use the
-        /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/> and
-        /// <see cref="PlayerDataEventType.OnPlayerDataImportFinished"/> events to resolve cross references
-        /// and initialization.</para>
+        /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/>,
+        /// <see cref="LockstepEventType.OnImportFinishingUp"/> or
+        /// <see cref="LockstepEventType.OnImportFinished"/> events to resolve cross references and
+        /// initialization.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         /// <param name="isAboutToBeImported"></param>
