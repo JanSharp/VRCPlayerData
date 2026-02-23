@@ -24,6 +24,18 @@ namespace JanSharp
         /// </summary>
         OnAllCustomPlayerDataRegistered,
         /// <summary>
+        /// <para>Raised once <see cref="PlayerDataManagerAPI.LocalPlayerData"/> has been set. Which happens
+        /// inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of <c>-10000</c> and in game
+        /// state deserialization for late joiners.</para>
+        /// <para>This event should only be used to fetch the local player data or any of its custom player
+        /// data into local variables. Anything outside of that is not supported and would likely just
+        /// complicate cross system interactions.</para>
+        /// <para><see cref="LockstepAPI.IsInitialized"/> is <see langword="false"/> at the time of this event
+        /// being raised.</para>
+        /// <para>Not game state safe.</para>
+        /// </summary>
+        OnLocalPlayerDataAvailable,
+        /// <summary>
         /// <para>Raised inside of <see cref="LockstepEventType.OnInit"/> with an <c>Order</c> of
         /// <c>-10000</c>, right before the <see cref="PlayerDataManagerAPI"/> gets initialized.</para>
         /// <para>very first event raised by the player data system.</para>

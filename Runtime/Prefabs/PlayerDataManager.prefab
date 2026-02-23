@@ -142,6 +142,7 @@ MonoBehaviour:
   lockstep: {fileID: 0}
   wannaBeClasses: {fileID: 0}
   widgetManager: {fileID: 0}
+  playerDataManager: {fileID: 0}
 --- !u!114 &4287694101713276346
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235,6 +236,7 @@ MonoBehaviour:
   deleteAllOfflinePlayerDataIAId: 0
   onRegisterCustomPlayerDataListeners: []
   onAllCustomPlayerDataRegisteredListeners: []
+  onLocalPlayerDataAvailableListeners: []
   onPrePlayerDataManagerInitListeners: []
   onPostPlayerDataManagerInitListeners: []
   onPlayerDataCreatedListeners: []

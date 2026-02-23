@@ -478,6 +478,8 @@ namespace JanSharp.Internal
             playerDataByPlayerId.Add(playerId, corePlayerData);
             playerDataByName.Add(displayName, corePlayerData);
             CreatePlayerDataForNewCorePlayerData(corePlayerData);
+            if (corePlayerData.isLocal)
+                RaiseOnLocalPlayerDataAvailable();
             RaiseOnPlayerDataCreated(corePlayerData);
         }
 
@@ -518,10 +520,11 @@ namespace JanSharp.Internal
             corePlayerData.isOffline = false;
             corePlayerData.playerId = playerId;
             corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
-            bool isLocal = playerId == localPlayerId;
-            corePlayerData.isLocal = isLocal;
-            if (isLocal)
-                localPlayerData = corePlayerData;
+            corePlayerData.isLocal = false;
+            if (playerId == localPlayerId)
+                Debug.LogError("[PlayerData] Impossible, the local player cannot be the player running "
+                    + "rejoining player logic for itself, that happens in OnPreClientJoined "
+                    + "which runs on every client but the local client.");
             playerDataByPlayerId.Add(playerId, corePlayerData);
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
@@ -890,6 +893,9 @@ namespace JanSharp.Internal
                 suspendedIndexInCustomPlayerDataArray++;
             }
             suspendedIndexInCustomPlayerDataArray = 0;
+
+            if (corePlayerData.isLocal)
+                RaiseOnLocalPlayerDataAvailable();
         }
 
         private void SerializeAllCorePlayerData()
@@ -1464,6 +1470,7 @@ namespace JanSharp.Internal
 
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onRegisterCustomPlayerDataListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onAllCustomPlayerDataRegisteredListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onLocalPlayerDataAvailableListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPrePlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPostPlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataCreatedListeners;
@@ -1489,6 +1496,12 @@ namespace JanSharp.Internal
         {
             // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
             JanSharp.CustomRaisedEvents.Raise(ref onAllCustomPlayerDataRegisteredListeners, nameof(PlayerDataEventType.OnAllCustomPlayerDataRegistered));
+        }
+
+        private void RaiseOnLocalPlayerDataAvailable()
+        {
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onLocalPlayerDataAvailableListeners, nameof(PlayerDataEventType.OnLocalPlayerDataAvailable));
         }
 
         private void RaiseOnPrePlayerDataManagerInit()
