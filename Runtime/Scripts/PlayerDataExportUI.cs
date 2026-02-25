@@ -2,16 +2,17 @@
 using UdonSharp;
 using UnityEngine;
 
-namespace JanSharp
+namespace JanSharp.Internal
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class PlayerDataExportUI : LockstepGameStateOptionsUI
+    public class PlayerDataExportUI : PlayerDataExportUIAPI
     {
         public override string OptionsClassName => nameof(PlayerDataExportOptions);
         [System.NonSerialized] public PlayerDataExportOptions currentOptions;
 
         [HideInInspector][SerializeField][SingletonReference] private PlayerDataManagerAPI playerDataManager;
 
+        [SerializeField] private PlayerDataSharedOptionsUILogic sharedOptionsUILogic;
         private FoldOutWidgetData infoFoldout;
         private LabelWidgetData infoLabel;
         private bool infoLabelIsInitialized = false;
@@ -29,6 +30,8 @@ namespace JanSharp
 
         protected override void InitWidgetData()
         {
+            sharedOptionsUILogic.InitWidgetData();
+
             infoFoldout = widgetManager.NewFoldOutScope("Player Data", foldedOut: false);
             infoLabel = widgetManager.NewLabel("");
             infoFoldout.AddChildDynamic(infoLabel);
@@ -78,10 +81,18 @@ namespace JanSharp
             InitInfoLabel();
             if (hasAnyCustomPlayerData)
                 ui.Info.AddChildDynamic(infoFoldout);
+
+            sharedOptionsUILogic.OnOptionsEditorShow(ui);
         }
 
         protected override void OnOptionsEditorHide(LockstepOptionsEditorUI ui)
         {
+            sharedOptionsUILogic.OnOptionsEditorHide(ui);
+        }
+
+        public override void AddPlayerDataOptionToggle(ToggleFieldWidgetData toggle)
+        {
+            sharedOptionsUILogic.AddPlayerDataOptionToggle(toggle);
         }
     }
 }

@@ -3,16 +3,17 @@ using UdonSharp;
 using UnityEngine;
 using VRC.SDK3.Data;
 
-namespace JanSharp
+namespace JanSharp.Internal
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class PlayerDataImportUI : LockstepGameStateOptionsUI
+    public class PlayerDataImportUI : PlayerDataImportUIAPI
     {
         public override string OptionsClassName => nameof(PlayerDataImportOptions);
         [System.NonSerialized] public PlayerDataImportOptions currentOptions;
 
         [HideInInspector][SerializeField][SingletonReference] private PlayerDataManagerAPI playerDataManager;
 
+        [SerializeField] private PlayerDataSharedOptionsUILogic sharedOptionsUILogic;
         private FoldOutWidgetData infoFoldout;
         private LabelWidgetData infoLabel;
         private FoldOutWidgetData playersInfoFoldout;
@@ -30,6 +31,8 @@ namespace JanSharp
 
         protected override void InitWidgetData()
         {
+            sharedOptionsUILogic.InitWidgetData();
+
             infoFoldout = widgetManager.NewFoldOutScope("Player Data", foldedOut: false);
             infoLabel = widgetManager.NewLabel("");
             infoFoldout.AddChildDynamic(infoLabel);
@@ -161,6 +164,10 @@ namespace JanSharp
             infoLabel.Label = sb.ToString();
         }
 
+        protected override void UpdateCurrentOptionsFromWidgetsImpl()
+        {
+        }
+
         protected override void OnOptionsEditorShow(LockstepOptionsEditorUI ui, uint importedDataVersion)
         {
             // Order of these calls matters as they are reading exported data.
@@ -176,14 +183,18 @@ namespace JanSharp
             }
 
             ui.Info.AddChildDynamic(playersInfoFoldout);
+
+            sharedOptionsUILogic.OnOptionsEditorShow(ui);
         }
 
         protected override void OnOptionsEditorHide(LockstepOptionsEditorUI ui)
         {
+            sharedOptionsUILogic.OnOptionsEditorHide(ui);
         }
 
-        protected override void UpdateCurrentOptionsFromWidgetsImpl()
+        public override void AddPlayerDataOptionToggle(ToggleFieldWidgetData toggle)
         {
+            sharedOptionsUILogic.AddPlayerDataOptionToggle(toggle);
         }
     }
 }
