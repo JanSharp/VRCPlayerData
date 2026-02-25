@@ -17,3 +17,4 @@
   - [ ] hm, what about having a counter on the core player data for systems to increment and decrement, where if that counter is non zero it is going to persist no matter what. Then for any where that counter is zero, they can be deleted if all of their data claims that they do not need to persist
 - [x] show in the import and export options UIs which custom player data exists and can be imported or exported, same as game states basically
 - [ ] Sort "Players To Import" alphabetically... but sorting needs to be done with lower cased strings while the displayed values need to keep their original casing, and this is such a gigantic pain with Udon. Easiest would be to do insert sorting during the process of populating arrays
+- [ ] add an API to the import and export UI scripts for registering toggles to be shown in a per player options fold out which also has a "select all" and "select none" button
