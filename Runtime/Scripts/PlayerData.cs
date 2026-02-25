@@ -21,7 +21,7 @@ namespace JanSharp
 
         /// <summary>
         /// <para>Called inside of player data game state deserialization after all other player data has been
-        /// imported on all player data which was not part of the imported data.</para>s
+        /// imported on all player data which was not part of the imported data.</para>
         /// </summary>
         public virtual void OnNotPartOfImportedData() { }
         /// <summary>
