@@ -268,13 +268,7 @@ namespace JanSharp.Internal
 
         public override CorePlayerData ReadCorePlayerDataRef()
         {
-#if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  ReadCorePlayerDataRef");
-#endif
-            uint persistentId = lockstep.ReadSmallUInt();
-            return playerDataByPersistentId.TryGetValue(persistentId, out DataToken corePlayerDataToken)
-                ? (CorePlayerData)corePlayerDataToken.Reference
-                : null;
+            return ReadCorePlayerDataRef(lockstep.IsDeserializingForImport);
         }
 
         public override CorePlayerData ReadCorePlayerDataRef(bool isImport)
