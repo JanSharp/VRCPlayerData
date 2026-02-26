@@ -285,7 +285,7 @@ namespace JanSharp.Internal
             uint persistentId = lockstep.ReadSmallUInt();
             if (isImport)
             {
-                if (persistentId != InvalidPersistentId)
+                if (persistentId == InvalidPersistentId)
                     return null;
                 persistentId = persistentIdByImportedPersistentId[persistentId].UInt;
             }
