@@ -225,6 +225,9 @@ namespace JanSharp
         /// <para>Can return <see langword="null"/> even if it is guaranteed that the reference passed to
         /// <see cref="WriteCorePlayerDataRef(CorePlayerData)"/> was not <see langword="null"/> as the player
         /// data could have been deleted in the meantime.</para>
+        /// <para>Can be used inside of player data deserialization, both imports and not, to resolve
+        /// references to <see cref="CorePlayerData"/> which has yet to have its custom player data get
+        /// deserialized. The <see cref="CorePlayerData"/> itself will be fully populated already.</para>
         /// </summary>
         /// <returns></returns>
         public abstract CorePlayerData ReadCorePlayerDataRef();

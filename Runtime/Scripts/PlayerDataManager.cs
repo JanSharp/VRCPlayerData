@@ -77,6 +77,7 @@ namespace JanSharp.Internal
         private int suspendedIndexInCorePlayerDataArray;
         private int suspendedIndexInCustomPlayerDataArray;
         private bool suspendedInCustomPlayerData;
+        private int serializationStage = 0;
         private int deserializationStage = 0;
         private int exportStage = 0;
         private int exportUnknownSizeScopeSizePosition;
@@ -740,6 +741,88 @@ namespace JanSharp.Internal
             return valid;
         }
 
+        private void SerializeCorePlayerData(CorePlayerData corePlayerData)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeCorePlayerData");
+#endif
+            lockstep.WriteSmallUInt(corePlayerData.persistentId);
+
+            lockstep.WriteFlags(
+                corePlayerData.isOffline,
+                corePlayerData.IsOvershadowed,
+                corePlayerData.prevOvershadowedPlayerData != null,
+                corePlayerData.nextOvershadowedPlayerData != null,
+                corePlayerData.IsOvershadowing);
+
+            if (corePlayerData.isOffline)
+                lockstep.WriteString(corePlayerData.displayName);
+            else
+                lockstep.WriteSmallUInt(corePlayerData.playerId);
+            if (corePlayerData.IsOvershadowed)
+                lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
+            if (corePlayerData.prevOvershadowedPlayerData != null)
+                lockstep.WriteSmallUInt((uint)corePlayerData.prevOvershadowedPlayerData.index);
+            if (corePlayerData.nextOvershadowedPlayerData != null)
+                lockstep.WriteSmallUInt((uint)corePlayerData.nextOvershadowedPlayerData.index);
+            if (corePlayerData.IsOvershadowing)
+            {
+                lockstep.WriteSmallUInt((uint)corePlayerData.firstOvershadowedPlayerData.index);
+                lockstep.WriteSmallUInt((uint)corePlayerData.lastOvershadowedPlayerData.index);
+            }
+        }
+
+        private void DeserializeCorePlayerData(int index)
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeCorePlayerData");
+#endif
+            CorePlayerData corePlayerData = allPlayerData[index];
+            corePlayerData.index = index;
+            corePlayerData.persistentId = lockstep.ReadSmallUInt();
+            playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
+
+            lockstep.ReadFlags(
+                out corePlayerData.isOffline,
+                out bool isOvershadowed,
+                out bool hasPrevOvershadowed,
+                out bool hasNextOvershadowed,
+                out bool isOvershadowing);
+
+            if (corePlayerData.isOffline)
+            {
+                corePlayerData.displayName = lockstep.ReadString();
+                // playerId remains 0u, as it should.
+            }
+            else
+            {
+                uint playerId = lockstep.ReadSmallUInt();
+                playerDataByPlayerId.Add(playerId, corePlayerData);
+                corePlayerData.playerId = playerId;
+                corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
+                bool isLocal = playerId == localPlayerId;
+                corePlayerData.isLocal = isLocal;
+                if (isLocal)
+                    localPlayerData = corePlayerData;
+                corePlayerData.displayName = lockstep.GetDisplayName(playerId);
+            }
+            if (isOvershadowed)
+                corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+            else
+                playerDataByName.Add(corePlayerData.displayName, corePlayerData);
+            if (hasPrevOvershadowed)
+                corePlayerData.prevOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+            if (hasNextOvershadowed)
+                corePlayerData.nextOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+            if (isOvershadowing)
+            {
+                corePlayerData.firstOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+                corePlayerData.lastOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
+            }
+
+            corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
+        }
+
         private void SerializeCustomPlayerData(PlayerData playerData)
         {
 #if PLAYER_DATA_DEBUG
@@ -764,128 +847,36 @@ namespace JanSharp.Internal
             playerData.Deserialize(isImport: false, importedDataVersion: 0u);
         }
 
-        private void SerializeCorePlayerData(CorePlayerData corePlayerData)
+        private void SerializeAllCustomPlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  SerializeCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  SerializeAllCustomPlayerData");
 #endif
-            if (suspendedInCustomPlayerData)
-                suspendedInCustomPlayerData = false;
-            else
-            {
-                lockstep.WriteSmallUInt(corePlayerData.persistentId);
-
-                lockstep.WriteFlags(
-                    corePlayerData.isOffline,
-                    corePlayerData.IsOvershadowed,
-                    corePlayerData.prevOvershadowedPlayerData != null,
-                    corePlayerData.nextOvershadowedPlayerData != null,
-                    corePlayerData.IsOvershadowing);
-
-                if (corePlayerData.isOffline)
-                    lockstep.WriteString(corePlayerData.displayName);
-                else
-                    lockstep.WriteSmallUInt(corePlayerData.playerId);
-                if (corePlayerData.IsOvershadowed)
-                    lockstep.WriteSmallUInt((uint)corePlayerData.overshadowingPlayerData.index);
-                if (corePlayerData.prevOvershadowedPlayerData != null)
-                    lockstep.WriteSmallUInt((uint)corePlayerData.prevOvershadowedPlayerData.index);
-                if (corePlayerData.nextOvershadowedPlayerData != null)
-                    lockstep.WriteSmallUInt((uint)corePlayerData.nextOvershadowedPlayerData.index);
-                if (corePlayerData.IsOvershadowing)
-                {
-                    lockstep.WriteSmallUInt((uint)corePlayerData.firstOvershadowedPlayerData.index);
-                    lockstep.WriteSmallUInt((uint)corePlayerData.lastOvershadowedPlayerData.index);
-                }
-            }
-
             PlayerData[] customPlayerData = corePlayerData.customPlayerData;
             while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
             {
                 if (DeSerializationIsRunningLong())
-                {
-                    suspendedInCustomPlayerData = true;
                     return;
-                }
                 SerializeCustomPlayerData(customPlayerData[suspendedIndexInCustomPlayerDataArray]);
                 if (lockstep.FlaggedToContinueNextFrame)
-                {
-                    suspendedInCustomPlayerData = true;
                     return;
-                }
                 suspendedIndexInCustomPlayerDataArray++;
             }
             suspendedIndexInCustomPlayerDataArray = 0;
         }
 
-        private void DeserializeCorePlayerData(int index)
+        private void DeserializeAllCustomPlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  DeserializeCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  DeserializeAllCustomPlayerData");
 #endif
-            CorePlayerData corePlayerData = allPlayerData[index];
-            if (suspendedInCustomPlayerData)
-                suspendedInCustomPlayerData = false;
-            else
-            {
-                corePlayerData.index = index;
-                corePlayerData.persistentId = lockstep.ReadSmallUInt();
-                playerDataByPersistentId.Add(corePlayerData.persistentId, corePlayerData);
-
-                lockstep.ReadFlags(
-                    out corePlayerData.isOffline,
-                    out bool isOvershadowed,
-                    out bool hasPrevOvershadowed,
-                    out bool hasNextOvershadowed,
-                    out bool isOvershadowing);
-
-                if (corePlayerData.isOffline)
-                {
-                    corePlayerData.displayName = lockstep.ReadString();
-                    // playerId remains 0u, as it should.
-                }
-                else
-                {
-                    uint playerId = lockstep.ReadSmallUInt();
-                    playerDataByPlayerId.Add(playerId, corePlayerData);
-                    corePlayerData.playerId = playerId;
-                    corePlayerData.playerApi = VRCPlayerApi.GetPlayerById((int)playerId);
-                    bool isLocal = playerId == localPlayerId;
-                    corePlayerData.isLocal = isLocal;
-                    if (isLocal)
-                        localPlayerData = corePlayerData;
-                    corePlayerData.displayName = lockstep.GetDisplayName(playerId);
-                }
-                if (isOvershadowed)
-                    corePlayerData.overshadowingPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
-                else
-                    playerDataByName.Add(corePlayerData.displayName, corePlayerData);
-                if (hasPrevOvershadowed)
-                    corePlayerData.prevOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
-                if (hasNextOvershadowed)
-                    corePlayerData.nextOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
-                if (isOvershadowing)
-                {
-                    corePlayerData.firstOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
-                    corePlayerData.lastOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
-                }
-
-                corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
-            }
-
             while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
             {
                 if (DeSerializationIsRunningLong())
-                {
-                    suspendedInCustomPlayerData = true;
                     return;
-                }
                 DeserializeCustomPlayerData(corePlayerData, suspendedIndexInCustomPlayerDataArray);
                 if (lockstep.FlaggedToContinueNextFrame)
-                {
-                    suspendedInCustomPlayerData = true;
                     return;
-                }
                 suspendedIndexInCustomPlayerDataArray++;
             }
             suspendedIndexInCustomPlayerDataArray = 0;
@@ -899,18 +890,39 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  SerializeAllCorePlayerData");
 #endif
-            if (!lockstep.IsContinuationFromPrevFrame)
-                lockstep.WriteSmallUInt((uint)allPlayerDataCount);
-            while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+            if (serializationStage == 0)
             {
-                if (DeSerializationIsRunningLong())
-                    return;
-                SerializeCorePlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
-                if (suspendedInCustomPlayerData)
-                    return;
-                suspendedIndexInCorePlayerDataArray++;
+                lockstep.WriteSmallUInt((uint)allPlayerDataCount);
+                serializationStage++;
             }
-            suspendedIndexInCorePlayerDataArray = 0;
+
+            if (serializationStage == 1)
+            {
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    SerializeCorePlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                serializationStage++;
+            }
+
+            if (serializationStage == 2)
+            {
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    SerializeAllCustomPlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                    if (lockstep.FlaggedToContinueNextFrame)
+                        return;
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                serializationStage = 0;
+            }
         }
 
         private void DeserializeAllCorePlayerData()
@@ -928,7 +940,7 @@ namespace JanSharp.Internal
             if (deserializationStage == 1)
             {
                 // Populate with empty instances so overshadowingPlayerData can be assigned immediately in the
-                // deserialization pass.
+                // core player data deserialization pass.
                 while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
                 {
                     if (DeSerializationIsRunningLong())
@@ -942,12 +954,27 @@ namespace JanSharp.Internal
 
             if (deserializationStage == 2)
             {
+                // Populate all the core player data first to enable custom player data to reference and use
+                // any and all of said data in its deserialization pass. Notably resolving persistent id refs.
                 while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
                 {
                     if (DeSerializationIsRunningLong())
                         return;
                     DeserializeCorePlayerData(suspendedIndexInCorePlayerDataArray);
-                    if (suspendedInCustomPlayerData)
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
+                deserializationStage++;
+            }
+
+            if (deserializationStage == 3)
+            {
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    DeserializeAllCustomPlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                    if (lockstep.FlaggedToContinueNextFrame)
                         return;
                     suspendedIndexInCorePlayerDataArray++;
                 }
