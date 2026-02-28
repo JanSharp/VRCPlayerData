@@ -1064,7 +1064,9 @@ namespace JanSharp.Internal
 #endif
             if (playerDataByName.TryGetValue(displayName, out DataToken playerDataToken))
                 return (CorePlayerData)playerDataToken.Reference;
-            return CreateNewOfflineCorePlayerData(displayName);
+            CorePlayerData corePlayerData = CreateNewOfflineCorePlayerData(displayName);
+            ArrList.Add(ref newlyCreatedImportedPlayerData, ref newlyCreatedImportedPlayerDataCount, corePlayerData);
+            return corePlayerData;
         }
 
         private void ExportAllCustomPlayerData(int classNameIndex)
