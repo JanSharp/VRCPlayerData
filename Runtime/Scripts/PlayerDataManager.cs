@@ -1410,8 +1410,9 @@ namespace JanSharp.Internal
             // Can clean up now, because any other systems that got imported should have used their own game
             // state deserialize function in order to finish resolving their associated player data import.
             if (!ImportOptions.includeUnnecessaryPlayers)
-                CleanUpUnnecessaryOfflineImportedPlayerData(allImportedPlayerData);
+                CleanUpUnnecessaryOfflineImportedPlayerData();
             allImportedPlayerData = null; // Free memory.
+            newlyCreatedImportedPlayerData = null; // Free memory.
         }
 
         [LockstepEvent(LockstepEventType.OnImportFinished, Order = 10000)]
@@ -1429,11 +1430,13 @@ namespace JanSharp.Internal
             persistentIdByImportedPersistentId.Clear();
         }
 
-        private void CleanUpUnnecessaryOfflineImportedPlayerData(CorePlayerData[] allImportedPlayerData)
+        private void CleanUpUnnecessaryOfflineImportedPlayerData()
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CleanUpUnnecessaryOfflineImportedPlayerData");
 #endif
+            if (!importSuspendedAnyClassNamePresent) // All newly created player data got deleted already in this case.
+                return;
             // TODO: Spread out across frames?
             for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
             {
