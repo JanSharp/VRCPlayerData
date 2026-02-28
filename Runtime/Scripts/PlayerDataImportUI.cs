@@ -48,17 +48,17 @@ namespace JanSharp.Internal
             playersInfoLabel = widgetManager.NewLabel("");
             playersInfoFoldout.AddChildDynamic(playersInfoLabel);
 
-            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary Offline Player Data", false);
+            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary New Offline Player Data", false);
         }
 
         private void UpdatePlayersInfo()
         {
             int count = (int)lockstep.ReadSmallUInt();
             playersInfoFoldout.Label = $"Players To Import ({count})";
+            playersInfoFoldout.IsVisible = count != 0;
 
             if (count == 0) // Possible to be 0 when redundant players are excluded at export time.
             {
-                playersInfoFoldout.IsVisible = false;
                 playersInfoLabel.Label = "";
                 return;
             }
@@ -182,6 +182,7 @@ namespace JanSharp.Internal
 
         protected override void UpdateCurrentOptionsFromWidgetsImpl()
         {
+            currentOptions.includeUnnecessaryPlayers = includeUnnecessaryPlayersToggle.Value;
         }
 
         protected override void OnOptionsEditorShow(LockstepOptionsEditorUI ui, uint importedDataVersion)
@@ -202,7 +203,7 @@ namespace JanSharp.Internal
 
             ui.Info.AddChildDynamic(playersInfoFoldout);
 
-            includeUnnecessaryPlayersToggle.SetValueWithoutNotify(includeUnnecessaryPlayersToggle.Interactable && currentOptions.includeUnnecessaryPlayers);
+            includeUnnecessaryPlayersToggle.SetValueWithoutNotify(currentOptions.includeUnnecessaryPlayers);
             ui.General.AddChildDynamic(includeUnnecessaryPlayersToggle);
 
             sharedOptionsUILogic.OnOptionsEditorShow(ui);

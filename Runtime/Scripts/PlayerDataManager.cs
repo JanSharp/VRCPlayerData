@@ -1164,6 +1164,14 @@ namespace JanSharp.Internal
             return true;
         }
 
+        private bool ShouldCleanUpEmptyImportedCorePlayerData()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  ShouldCleanUpEmptyImportedCorePlayerData");
+#endif
+            return !importSuspendedAnyClassNamePresent && !ImportOptions.includeUnnecessaryPlayers;
+        }
+
         private void CleanUpEmptyImportedCorePlayerData()
         {
 #if PLAYER_DATA_DEBUG
@@ -1178,12 +1186,11 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  ImportPopulateMissingCustomPlayerData");
 #endif
-            int count = allImportedPlayerData.Length;
-            while (suspendedIndexInCorePlayerDataArray < count)
+            while (suspendedIndexInCorePlayerDataArray < newlyCreatedImportedPlayerDataCount)
             {
                 if (DeSerializationIsRunningLong())
                     return;
-                CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
+                CorePlayerData corePlayerData = newlyCreatedImportedPlayerData[suspendedIndexInCorePlayerDataArray];
                 PlayerData[] customPlayerData = corePlayerData.customPlayerData;
                 PlayerData playerData = customPlayerData[classNameIndex];
                 if (playerData == null)
@@ -1337,7 +1344,7 @@ namespace JanSharp.Internal
 
             if (importStage == 4)
             {
-                if (!importSuspendedAnyClassNamePresent)
+                if (ShouldCleanUpEmptyImportedCorePlayerData())
                 {
                     CleanUpEmptyImportedCorePlayerData();
                     importStage++; // Skip stage 5.
@@ -1435,7 +1442,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CleanUpUnnecessaryOfflineImportedPlayerData");
 #endif
-            if (!importSuspendedAnyClassNamePresent) // All newly created player data got deleted already in this case.
+            if (ShouldCleanUpEmptyImportedCorePlayerData()) // If that cleanup ran, all newly created player data got deleted already.
                 return;
             // TODO: Spread out across frames?
             for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)

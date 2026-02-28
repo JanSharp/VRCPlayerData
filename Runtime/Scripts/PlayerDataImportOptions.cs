@@ -10,8 +10,9 @@ namespace JanSharp
         public override uint LowestSupportedDataVersion => 0u;
 
         /// <summary>
-        /// <para>Unnecessary refers to offline players where all custom player data reports that it does not
-        /// need to persist.</para>
+        /// <para>This refers to offline players which weren't part of the state before the import where all
+        /// custom player data reports that it does not need to persist, or no custom plyer data was imported
+        /// at all.</para>
         /// </summary>
         [System.NonSerialized] public bool includeUnnecessaryPlayers = false;
 
