@@ -18,6 +18,7 @@ namespace JanSharp.Internal
         private LabelWidgetData infoLabel;
         private FoldOutWidgetData playersInfoFoldout;
         private LabelWidgetData playersInfoLabel;
+        private ToggleFieldWidgetData includeUnnecessaryPlayersToggle;
 
         protected override LockstepGameStateOptionsData NewOptionsImpl()
         {
@@ -32,6 +33,12 @@ namespace JanSharp.Internal
         protected override void InitWidgetData()
         {
             sharedOptionsUILogic.InitWidgetData();
+        }
+
+        private void LazyInitWidgetData()
+        {
+            if (infoFoldout != null)
+                return;
 
             infoFoldout = widgetManager.NewFoldOutScope("Player Data", foldedOut: false);
             infoLabel = widgetManager.NewLabel("");
@@ -40,12 +47,21 @@ namespace JanSharp.Internal
             playersInfoFoldout = widgetManager.NewFoldOutScope("", foldedOut: false);
             playersInfoLabel = widgetManager.NewLabel("");
             playersInfoFoldout.AddChildDynamic(playersInfoLabel);
+
+            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary Offline Player Data", false);
         }
 
         private void UpdatePlayersInfo()
         {
             int count = (int)lockstep.ReadSmallUInt();
             playersInfoFoldout.Label = $"Players To Import ({count})";
+
+            if (count == 0) // Possible to be 0 when redundant players are excluded at export time.
+            {
+                playersInfoFoldout.IsVisible = false;
+                playersInfoLabel.Label = "";
+                return;
+            }
 
             StringBuilder sb = new StringBuilder();
             sb.Append("<size=80%>");
@@ -170,6 +186,8 @@ namespace JanSharp.Internal
 
         protected override void OnOptionsEditorShow(LockstepOptionsEditorUI ui, uint importedDataVersion)
         {
+            LazyInitWidgetData();
+
             // Order of these calls matters as they are reading exported data.
             UpdatePlayersInfo();
             UpdateCustomPlayerDataInfoLabel(out bool hasAnyCustomPlayerData, out bool anyWarnings);
@@ -183,6 +201,9 @@ namespace JanSharp.Internal
             }
 
             ui.Info.AddChildDynamic(playersInfoFoldout);
+
+            includeUnnecessaryPlayersToggle.SetValueWithoutNotify(includeUnnecessaryPlayersToggle.Interactable && currentOptions.includeUnnecessaryPlayers);
+            ui.General.AddChildDynamic(includeUnnecessaryPlayersToggle);
 
             sharedOptionsUILogic.OnOptionsEditorShow(ui);
         }

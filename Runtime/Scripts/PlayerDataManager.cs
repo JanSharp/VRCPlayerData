@@ -21,6 +21,8 @@ namespace JanSharp.Internal
 
         [HideInInspector][SerializeField][SingletonReference] private WannaBeClassesManager wannaBeClasses;
 
+        public override PlayerDataImportOptions ImportOptions => (PlayerDataImportOptions)OptionsForCurrentImport;
+
         /// <summary>
         /// <para>Sorted alphabetically, use binary search.</para>
         /// </summary>
@@ -1207,7 +1209,7 @@ namespace JanSharp.Internal
         private void Export()
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  Export");
+            Debug.Log($"[PlayerDataDebug] Manager  Export - exportStage: {exportStage}");
 #endif
             if (exportStage == 0)
             {
@@ -1264,10 +1266,10 @@ namespace JanSharp.Internal
             }
         }
 
-        private void Import(uint importedDataVersion)
+        private void Import(uint importedDataVersion, PlayerDataImportOptions importOptions)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  Import");
+            Debug.Log($"[PlayerDataDebug] Manager  Import - importStage: {importStage}");
 #endif
             if (importStage == 0)
             {
@@ -1403,11 +1405,12 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  OnImportFinishingUp");
 #endif
-            if (allImportedPlayerData == null) // The imported data did not contain the player data game state.
+            if (!IsPartOfCurrentImport)
                 return;
             // Can clean up now, because any other systems that got imported should have used their own game
             // state deserialize function in order to finish resolving their associated player data import.
-            CleanUpUnnecessaryOfflineImportedPlayerData(allImportedPlayerData);
+            if (!ImportOptions.includeUnnecessaryPlayers)
+                CleanUpUnnecessaryOfflineImportedPlayerData(allImportedPlayerData);
             allImportedPlayerData = null; // Free memory.
         }
 
@@ -1489,7 +1492,7 @@ namespace JanSharp.Internal
             deSerializationSw.Start();
             if (isImport)
             {
-                Import(importedDataVersion);
+                Import(importedDataVersion, (PlayerDataImportOptions)importOptions);
                 return null;
             }
             if (!lockstep.IsContinuationFromPrevFrame)

@@ -20,4 +20,5 @@
 - [x] add an API to the import and export UI scripts for registering toggles to be shown in a per player options fold out which also has a "select all" and "select none" button
 - [x] pretty sure OnNotPartOfImportedData is inconsistent in that it runs for all custom player data for all core player data which weren't part of the import, while OnNotPartOfImportedData does not run on custom player data where the custom player data class didn't get imported but the core player data it is on did
 - [x] test the late joiner gs serialization change
-- [ ] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
+- [x] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
+  - [ ] add export option
