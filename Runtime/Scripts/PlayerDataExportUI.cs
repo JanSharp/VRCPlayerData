@@ -15,6 +15,7 @@ namespace JanSharp.Internal
         [SerializeField] private PlayerDataSharedOptionsUILogic sharedOptionsUILogic;
         private FoldOutWidgetData infoFoldout;
         private LabelWidgetData infoLabel;
+        private ToggleFieldWidgetData includeUnnecessaryPlayersToggle;
         private bool infoLabelIsInitialized = false;
         private bool hasAnyCustomPlayerData;
 
@@ -31,10 +32,18 @@ namespace JanSharp.Internal
         protected override void InitWidgetData()
         {
             sharedOptionsUILogic.InitWidgetData();
+        }
+
+        private void LazyInitWidgetData()
+        {
+            if (infoFoldout != null)
+                return;
 
             infoFoldout = widgetManager.NewFoldOutScope("Player Data", foldedOut: false);
             infoLabel = widgetManager.NewLabel("");
             infoFoldout.AddChildDynamic(infoLabel);
+
+            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary Player Data", false);
         }
 
         private void InitInfoLabel()
@@ -74,13 +83,19 @@ namespace JanSharp.Internal
 
         protected override void UpdateCurrentOptionsFromWidgetsImpl()
         {
+            currentOptions.includeUnnecessaryPlayers = includeUnnecessaryPlayersToggle.Value;
         }
 
         protected override void OnOptionsEditorShow(LockstepOptionsEditorUI ui, uint importedDataVersion)
         {
+            LazyInitWidgetData();
+
             InitInfoLabel();
             if (hasAnyCustomPlayerData)
                 ui.Info.AddChildDynamic(infoFoldout);
+
+            includeUnnecessaryPlayersToggle.SetValueWithoutNotify(currentOptions.includeUnnecessaryPlayers);
+            ui.General.AddChildDynamic(includeUnnecessaryPlayersToggle);
 
             sharedOptionsUILogic.OnOptionsEditorShow(ui);
         }

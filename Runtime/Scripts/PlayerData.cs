@@ -10,14 +10,39 @@ namespace JanSharp
         public abstract string PlayerDataInternalName { get; }
         public abstract string PlayerDataDisplayName { get; }
 
+        /// <summary>
+        /// <para>When <see cref="PersistPlayerDataInExport"/> is not overridden separately,
+        /// <see cref="CorePlayerData.isOffline"/> can actually be <see langword="false"/> inside of this
+        /// function. Semantically this still kind of makes sense as when importing only newly imported
+        /// offline player data would potentially be deleted, regardless of the offline state at export
+        /// time.</para>
+        /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
+        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
+        /// actually not persist.</para>
+        /// </summary>
+        /// <returns></returns>
         public abstract bool PersistPlayerDataWhileOffline();
         /// <summary>
         /// <para>Called in <see cref="LockstepEventType.OnImportFinishingUp"/>.</para>
         /// <para>Only called on player data that has been newly created through the import that has just
         /// happened. Any player data which has already existed beforehand is not going to get deleted.</para>
+        /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
+        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
+        /// actually not persist.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
+        /// <summary>
+        /// <para>Called in player data game state serialization for exports, only on <see cref="PlayerData"/>
+        /// where <see cref="SerializableWannaBeClass.SupportsImportExport"/> is
+        /// <see langword="true"/>.</para>
+        /// <para>Called regardless of <see cref="CorePlayerData.isOffline"/>.</para>
+        /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
+        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
+        /// actually not persist.</para>
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool PersistPlayerDataInExport() => PersistPlayerDataWhileOffline();
 
         /// <summary>
         /// <para>Called inside of player data game state deserialization after all other player data has been

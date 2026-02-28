@@ -21,6 +21,7 @@ namespace JanSharp.Internal
 
         [HideInInspector][SerializeField][SingletonReference] private WannaBeClassesManager wannaBeClasses;
 
+        public override PlayerDataExportOptions ExportOptions => (PlayerDataExportOptions)OptionsForCurrentExport;
         public override PlayerDataImportOptions ImportOptions => (PlayerDataImportOptions)OptionsForCurrentImport;
 
         /// <summary>
@@ -82,6 +83,8 @@ namespace JanSharp.Internal
         private int serializationStage = 0;
         private int deserializationStage = 0;
         private int exportStage = 0;
+        private CorePlayerData[] playerDataToExport;
+        private int playerDataToExportCount;
         private int exportUnknownSizeScopeSizePosition;
         private int importStage = 0;
         private uint highestPersistentIdPreImport;
@@ -986,16 +989,42 @@ namespace JanSharp.Internal
             }
         }
 
-        private uint CountNonOvershadowedPlayerData()
+        private void CollectPlayersToExport(PlayerDataExportOptions exportOptions)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  CountNonOvershadowedPlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  CollectPlayersToExport");
 #endif
-            uint count = 0;
-            for (int i = 0; i < allPlayerDataCount; i++)
-                if (!allPlayerData[i].IsOvershadowed)
-                    count++;
-            return count;
+            bool includeUnnecessaryPlayers = exportOptions.includeUnnecessaryPlayers;
+            while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+            {
+                if (DeSerializationIsRunningLong())
+                    return;
+                CorePlayerData corePlayerData = allPlayerData[suspendedIndexInCorePlayerDataArray];
+                if (corePlayerData.IsOvershadowed)
+                {
+                    suspendedIndexInCorePlayerDataArray++;
+                    continue;
+                }
+
+                if (includeUnnecessaryPlayers)
+                {
+                    ArrList.Add(ref playerDataToExport, ref playerDataToExportCount, corePlayerData);
+                    suspendedIndexInCorePlayerDataArray++;
+                    continue;
+                }
+                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                for (int i = 0; i < playerDataClassNamesCount; i++)
+                {
+                    PlayerData data = customPlayerData[i];
+                    if (data.SupportsImportExport && data.PersistPlayerDataInExport())
+                    {
+                        ArrList.Add(ref playerDataToExport, ref playerDataToExportCount, corePlayerData);
+                        break;
+                    }
+                }
+                suspendedIndexInCorePlayerDataArray++;
+            }
+            suspendedIndexInCorePlayerDataArray = 0;
         }
 
         private uint CountPlayerDataSupportingExport(PlayerData[] customPlayerData)
@@ -1036,10 +1065,8 @@ namespace JanSharp.Internal
         private void ExportCorePlayerData(CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  ExportCorePlayerData");
+            Debug.Log($"[PlayerDataDebug] Manager  ExportCorePlayerData - corePlayerData.persistentId: {corePlayerData.persistentId}, corePlayerData.displayName: {corePlayerData.displayName}");
 #endif
-            if (corePlayerData.IsOvershadowed)
-                return;
             lockstep.WriteSmallUInt(corePlayerData.persistentId);
             lockstep.WriteString(corePlayerData.displayName);
         }
@@ -1079,19 +1106,14 @@ namespace JanSharp.Internal
 #endif
             suspendedInCustomPlayerData = false;
 
-            while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+            while (suspendedIndexInCorePlayerDataArray < playerDataToExportCount)
             {
                 if (DeSerializationIsRunningLong())
                 {
                     suspendedInCustomPlayerData = true;
                     return;
                 }
-                CorePlayerData corePlayerData = allPlayerData[suspendedIndexInCorePlayerDataArray];
-                if (corePlayerData.IsOvershadowed)
-                {
-                    suspendedIndexInCorePlayerDataArray++;
-                    continue;
-                }
+                CorePlayerData corePlayerData = playerDataToExport[suspendedIndexInCorePlayerDataArray];
                 PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
                 playerData.Serialize(isExport: true);
                 if (lockstep.FlaggedToContinueNextFrame)
@@ -1213,38 +1235,56 @@ namespace JanSharp.Internal
             return corePlayerData.customPlayerData;
         }
 
-        private void Export()
+        private void Export(PlayerDataExportOptions exportOptions)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  Export - exportStage: {exportStage}");
 #endif
             if (exportStage == 0)
             {
-                lockstep.WriteSmallUInt(CountNonOvershadowedPlayerData());
+                playerDataToExport = new CorePlayerData[ArrList.MinCapacity];
+                playerDataToExportCount = 0;
                 exportStage++;
             }
 
             if (exportStage == 1)
             {
-                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                CollectPlayersToExport(exportOptions);
+                if (lockstep.FlaggedToContinueNextFrame)
+                    return;
+                exportStage++;
+            }
+
+            if (exportStage == 2)
+            {
+#if PLAYER_DATA_DEBUG
+                Debug.Log($"[PlayerDataDebug] Manager  Export (inner) - playerDataToExportCount: {playerDataToExportCount}");
+#endif
+                lockstep.WriteSmallUInt((uint)playerDataToExportCount);
+                exportStage++;
+            }
+
+            if (exportStage == 3)
+            {
+                while (suspendedIndexInCorePlayerDataArray < playerDataToExportCount)
                 {
                     if (DeSerializationIsRunningLong())
                         return;
-                    ExportCorePlayerData(allPlayerData[suspendedIndexInCorePlayerDataArray]);
+                    ExportCorePlayerData(playerDataToExport[suspendedIndexInCorePlayerDataArray]);
                     suspendedIndexInCorePlayerDataArray++;
                 }
                 suspendedIndexInCorePlayerDataArray = 0;
                 exportStage++;
             }
 
-            if (exportStage == 2)
+            if (exportStage == 4)
             {
                 PlayerData[] customPlayerData = GetDummyCustomPlayerData();
                 lockstep.WriteSmallUInt(CountPlayerDataSupportingExport(customPlayerData));
                 exportStage++;
             }
 
-            if (exportStage == 3)
+            if (exportStage == 5)
             {
                 PlayerData[] customPlayerData = GetDummyCustomPlayerData();
                 while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
@@ -1269,6 +1309,12 @@ namespace JanSharp.Internal
                     suspendedIndexInCustomPlayerDataArray++;
                 }
                 suspendedIndexInCustomPlayerDataArray = 0;
+                exportStage++;
+            }
+
+            if (exportStage == 6)
+            {
+                playerDataToExport = null; // Free memory.
                 exportStage = 0;
             }
         }
@@ -1482,7 +1528,7 @@ namespace JanSharp.Internal
             deSerializationSw.Start();
             if (isExport)
             {
-                Export();
+                Export((PlayerDataExportOptions)exportOptions);
                 return;
             }
             if (!lockstep.IsContinuationFromPrevFrame)

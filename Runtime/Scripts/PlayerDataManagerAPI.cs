@@ -295,6 +295,10 @@ namespace JanSharp
         public abstract uint GetPersistentIdFromImportedId(uint importedPersistentId);
 
         /// <summary>
+        /// <para>Used in exports.</para>
+        /// </summary>
+        public abstract PlayerDataExportOptions ExportOptions { get; }
+        /// <summary>
         /// <para>Used in imports.</para>
         /// </summary>
         public abstract PlayerDataImportOptions ImportOptions { get; }

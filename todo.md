@@ -21,4 +21,4 @@
 - [x] pretty sure OnNotPartOfImportedData is inconsistent in that it runs for all custom player data for all core player data which weren't part of the import, while OnNotPartOfImportedData does not run on custom player data where the custom player data class didn't get imported but the core player data it is on did
 - [x] test the late joiner gs serialization change
 - [x] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
-  - [ ] add export option
+  - [x] add export option
