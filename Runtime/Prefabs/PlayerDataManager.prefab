@@ -93,7 +93,7 @@ GameObject:
   - component: {fileID: 812694554849407173}
   - component: {fileID: 2180292944251311266}
   m_Layer: 0
-  m_Name: PlayerDataExportUI
+  m_Name: PlayerDataExportOptionsUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -260,7 +260,7 @@ GameObject:
   - component: {fileID: 393224127352497057}
   - component: {fileID: 4287694101713276346}
   m_Layer: 0
-  m_Name: PlayerDataImportUI
+  m_Name: PlayerDataImportOptionsUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
