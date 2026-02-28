@@ -82,6 +82,7 @@ namespace JanSharp.Internal
         private int exportStage = 0;
         private int exportUnknownSizeScopeSizePosition;
         private int importStage = 0;
+        private uint highestPersistentIdPreImport;
         private CorePlayerData[] allImportedPlayerData;
         private CorePlayerData[] newlyCreatedImportedPlayerData;
         private int newlyCreatedImportedPlayerDataCount;
@@ -1270,6 +1271,7 @@ namespace JanSharp.Internal
 #endif
             if (importStage == 0)
             {
+                highestPersistentIdPreImport = nextPersistentId - 1u;
                 allImportedPlayerData = new CorePlayerData[lockstep.ReadSmallUInt()];
                 newlyCreatedImportedPlayerData = new CorePlayerData[ArrList.MinCapacity];
                 newlyCreatedImportedPlayerDataCount = 0;
@@ -1361,21 +1363,36 @@ namespace JanSharp.Internal
 
             if (importStage == 6)
             {
-                importSuspendedPresentClassNames = null;
+                while (suspendedIndexInCorePlayerDataArray < allPlayerDataCount)
+                {
+                    if (DeSerializationIsRunningLong())
+                        return;
+                    CorePlayerData player = allPlayerData[suspendedIndexInCorePlayerDataArray];
+                    if (player.importedPersistentId != InvalidPersistentId)
+                    {
+                        PlayerData[] customPlayerData = player.customPlayerData;
+                        for (int i = 0; i < playerDataClassNamesCount; i++)
+                            customPlayerData[i].OnNotPartOfImportedData();
+                    }
+                    else if (player.persistentId <= highestPersistentIdPreImport)
+                    {
+                        // Part of imported data and existed before import already.
+                        // Player data which didn't exist before already got newly created, newly initialized,
+                        // see ImportPopulateMissingCustomPlayerData. Those should not receive OnNotPartOfImportedData.
+                        PlayerData[] customPlayerData = player.customPlayerData;
+                        for (int i = 0; i < playerDataClassNamesCount; i++)
+                            if (!importSuspendedPresentClassNames[i])
+                                customPlayerData[i].OnNotPartOfImportedData();
+                    }
+                    suspendedIndexInCorePlayerDataArray++;
+                }
+                suspendedIndexInCorePlayerDataArray = 0;
                 importStage++;
             }
 
             if (importStage == 7)
             {
-                for (int i = 0; i < allPlayerDataCount; i++)
-                {
-                    CorePlayerData player = allPlayerData[i];
-                    if (player.importedPersistentId != InvalidPersistentId)
-                        continue;
-                    PlayerData[] customPlayerData = player.customPlayerData;
-                    for (int j = 0; j < playerDataClassNamesCount; j++)
-                        customPlayerData[j].OnNotPartOfImportedData();
-                }
+                importSuspendedPresentClassNames = null;
                 importStage = 0;
             }
         }
