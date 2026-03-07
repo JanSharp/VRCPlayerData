@@ -43,7 +43,7 @@ namespace JanSharp.Internal
             infoLabel = widgetManager.NewLabel("");
             infoFoldout.AddChildDynamic(infoLabel);
 
-            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary Player Data", false);
+            includeUnnecessaryPlayersToggle = widgetManager.NewLeftToggleField("Unnecessary Player Data", false);
         }
 
         private void InitInfoLabel()

@@ -48,7 +48,7 @@ namespace JanSharp.Internal
             playersInfoLabel = widgetManager.NewLabel("");
             playersInfoFoldout.AddChildDynamic(playersInfoLabel);
 
-            includeUnnecessaryPlayersToggle = widgetManager.NewToggleField("Unnecessary New Offline Player Data", false);
+            includeUnnecessaryPlayersToggle = widgetManager.NewLeftToggleField("Unnecessary New Offline Player Data", false);
         }
 
         private void UpdatePlayersInfo()
