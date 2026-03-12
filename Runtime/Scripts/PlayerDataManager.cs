@@ -1428,7 +1428,8 @@ namespace JanSharp.Internal
                     {
                         PlayerData[] customPlayerData = player.customPlayerData;
                         for (int i = 0; i < playerDataClassNamesCount; i++)
-                            customPlayerData[i].OnNotPartOfImportedData();
+                            if (!importSuspendedPresentClassNames[i])
+                                customPlayerData[i].OnNotPartOfImportedData();
                     }
                     else if (player.persistentId <= highestPersistentIdPreImport)
                     {
@@ -1437,8 +1438,7 @@ namespace JanSharp.Internal
                         // see ImportPopulateMissingCustomPlayerData. Those should not receive OnNotPartOfImportedData.
                         PlayerData[] customPlayerData = player.customPlayerData;
                         for (int i = 0; i < playerDataClassNamesCount; i++)
-                            if (!importSuspendedPresentClassNames[i])
-                                customPlayerData[i].OnNotPartOfImportedData();
+                            customPlayerData[i].OnNotPartOfImportedData();
                     }
                     suspendedIndexInCorePlayerDataArray++;
                 }
