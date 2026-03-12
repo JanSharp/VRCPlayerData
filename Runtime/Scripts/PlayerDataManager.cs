@@ -45,8 +45,6 @@ namespace JanSharp.Internal
         /// </summary>
         [HideInInspector][SerializeField] private string[] internalNameByClassNameValues;
 
-        private const uint InvalidPersistentId = 0u;
-
         /// <summary>
         /// <para><c>0u</c> (see <see cref="InvalidPersistentId"/>) is an invalid id.</para>
         /// </summary>
@@ -286,9 +284,9 @@ namespace JanSharp.Internal
             uint persistentId = lockstep.ReadSmallUInt();
             if (isImport)
             {
-                if (persistentId == InvalidPersistentId)
+                if (!persistentIdByImportedPersistentId.TryGetValue(persistentId, out DataToken idToken))
                     return null;
-                persistentId = persistentIdByImportedPersistentId[persistentId].UInt;
+                persistentId = idToken.UInt;
             }
             return playerDataByPersistentId.TryGetValue(persistentId, out DataToken corePlayerDataToken)
                 ? (CorePlayerData)corePlayerDataToken.Reference
@@ -1512,11 +1510,11 @@ namespace JanSharp.Internal
         public override uint GetPersistentIdFromImportedId(uint importedPersistentId)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(importedPersistentId == InvalidPersistentId ? InvalidPersistentId : persistentIdByImportedPersistentId[importedPersistentId].UInt)}");
+            Debug.Log($"[PlayerDataDebug] Manager  GetPersistentIdFromImportedId - importedPersistentId: {importedPersistentId}, result: {(persistentIdByImportedPersistentId.TryGetValue(importedPersistentId, out DataToken idTokenDebug) ? idTokenDebug.UInt : InvalidPersistentId)}");
 #endif
-            return importedPersistentId == InvalidPersistentId
-                ? InvalidPersistentId
-                : persistentIdByImportedPersistentId[importedPersistentId].UInt;
+            return persistentIdByImportedPersistentId.TryGetValue(importedPersistentId, out DataToken idToken)
+                ? idToken.UInt
+                : InvalidPersistentId;
         }
 
         public override void SerializeGameState(bool isExport, LockstepGameStateOptionsData exportOptions)

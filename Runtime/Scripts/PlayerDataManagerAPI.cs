@@ -154,6 +154,7 @@ namespace JanSharp
     [SingletonScript("28a5e083347ce2753aa92dfda01bef32")] // Runtime/Prefabs/PlayerDataManager.prefab
     public abstract class PlayerDataManagerAPI : LockstepGameState
     {
+        public const uint InvalidPersistentId = 0u;
         /// <summary>
         /// <para>Gets set to true immediately after
         /// <see cref="PlayerDataEventType.OnPrePlayerDataManagerInit"/> got raised.</para>
@@ -224,7 +225,7 @@ namespace JanSharp
         /// <para>Read a reference to a core player data instance from the lockstep read string.</para>
         /// <para>Can return <see langword="null"/> even if it is guaranteed that the reference passed to
         /// <see cref="WriteCorePlayerDataRef(CorePlayerData)"/> was not <see langword="null"/> as the player
-        /// data could have been deleted in the meantime.</para>
+        /// data could have been deleted in the meantime (applies to both imports and not).</para>
         /// <para>Can be used inside of player data deserialization, both imports and not, to resolve
         /// references to <see cref="CorePlayerData"/> which has yet to have its custom player data get
         /// deserialized. The <see cref="CorePlayerData"/> itself will be fully populated already.</para>
@@ -232,8 +233,9 @@ namespace JanSharp
         /// <returns></returns>
         public abstract CorePlayerData ReadCorePlayerDataRef();
         /// <inheritdoc cref="ReadCorePlayerDataRef()"/>
-        /// <param name="isImport">When <see langword="true"/>
-        /// <see cref="GetPersistentIdFromImportedId(uint)"/> will be used to resolve the reference.</param>
+        /// <param name="isImport">Defaults to <see cref="LockstepAPI.IsDeserializingForImport"/>. When
+        /// <see langword="true"/> <see cref="GetPersistentIdFromImportedId(uint)"/> will be used to resolve
+        /// the reference.</param>
         public abstract CorePlayerData ReadCorePlayerDataRef(bool isImport);
         /// <summary>
         /// <para>Sends an input action which ends up running
@@ -289,6 +291,8 @@ namespace JanSharp
         /// <para>Note how this is available throughout the entirety of
         /// <see cref="LockstepEventType.OnImportFinishingUp"/>.</para>
         /// <para>Game state safe.</para>
+        /// <para>Can return <see cref="InvalidPersistentId"/> even if the given
+        /// <paramref name="importedPersistentId"/> is not <see cref="InvalidPersistentId"/>.</para>
         /// </summary>
         /// <param name="importedPersistentId"></param>
         /// <returns></returns>
