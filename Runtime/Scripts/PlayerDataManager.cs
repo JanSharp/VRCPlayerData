@@ -1016,6 +1016,9 @@ namespace JanSharp.Internal
                     PlayerData data = customPlayerData[i];
                     if (data.SupportsImportExport && data.PersistPlayerDataInExport())
                     {
+#if PLAYER_DATA_DEBUG
+                        Debug.Log($"[PlayerDataDebug] Manager  CollectPlayersToExport (inner) - '{data.PlayerDataInternalName}' wants '{corePlayerData.displayName}' to persist");
+#endif
                         ArrList.Add(ref playerDataToExport, ref playerDataToExportCount, corePlayerData);
                         break;
                     }
