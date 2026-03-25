@@ -165,6 +165,11 @@ namespace JanSharp
         /// <para>Game state safe.</para>
         /// </summary>
         public abstract bool IsInitialized { get; }
+        /// <summary>
+        /// <para>The final order of custom player data classes - initialization order, load order - is
+        /// undefined and must not be relied upon.</para>
+        /// </summary>
+        /// <param name="playerDataClassName"></param>
         public abstract void RegisterCustomPlayerDataDynamic(string playerDataClassName);
         /// <summary>
         /// <para>Usable inside of <see cref="PlayerDataEventType.OnAllCustomPlayerDataRegistered"/> and
