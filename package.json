@@ -9,13 +9,12 @@
     "email": "steinmeister36@gmail.com",
     "url": "https://jansharp.github.io"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "license": "MIT",
   "vpmDependencies": {
     "com.vrchat.worlds": "^3.6.x",
     "com.jansharp.common": ">=0.1.0",
-    "com.jansharp.lockstep": ">=0.1.0"
+    "com.jansharp.lockstep": ">=1.1.0"
   },
   "url": "https://github.com/JanSharp/VRCPlayerData/releases/download/v0.1.0/com.jansharp.player-data.zip",
   "changelogUrl": "https://github.com/JanSharp/VRCPlayerData/blob/v0.1.0/CHANGELOG.md"
