@@ -22,3 +22,4 @@
 - [x] test the late joiner gs serialization change
 - [x] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
   - [x] add export option
+- [x] use max work ms per frame from lockstep API

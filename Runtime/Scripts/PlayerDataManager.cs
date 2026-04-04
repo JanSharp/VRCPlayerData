@@ -73,7 +73,7 @@ namespace JanSharp.Internal
         /// </summary>
         private DataDictionary persistentIdByImportedPersistentId = new DataDictionary();
 
-        private const long MaxWorkMSPerFrame = 5L;
+        private double maxWorkMSPerFrame;
         private System.Diagnostics.Stopwatch deSerializationSw = new System.Diagnostics.Stopwatch();
         private int suspendedIndexInCorePlayerDataArray;
         private int suspendedIndexInCustomPlayerDataArray;
@@ -118,9 +118,22 @@ namespace JanSharp.Internal
 
         private void Start()
         {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  Start");
+#endif
             localPlayerId = (uint)Networking.LocalPlayer.playerId;
+            maxWorkMSPerFrame = lockstep.MaxWorkMSPerFrame;
             RaiseOnRegisterCustomPlayerData();
             RaiseOnAllCustomPlayerDataRegistered();
+        }
+
+        [LockstepEvent(LockstepEventType.OnMaxWorkMSPerFrameChanged)]
+        public void OnMaxWorkMSPerFrameChanged()
+        {
+#if PLAYER_DATA_DEBUG
+            Debug.Log($"[PlayerDataDebug] Manager  OnMaxWorkMSPerFrameChanged");
+#endif
+            maxWorkMSPerFrame = lockstep.MaxWorkMSPerFrame;
         }
 
         public override void RegisterCustomPlayerDataDynamic(string playerDataClassName)
@@ -713,7 +726,7 @@ namespace JanSharp.Internal
 
         private bool DeSerializationIsRunningLong()
         {
-            bool result = deSerializationSw.ElapsedMilliseconds > MaxWorkMSPerFrame;
+            bool result = deSerializationSw.Elapsed.TotalMilliseconds > maxWorkMSPerFrame;
             if (result)
                 lockstep.FlagToContinueNextFrame();
             return result;
