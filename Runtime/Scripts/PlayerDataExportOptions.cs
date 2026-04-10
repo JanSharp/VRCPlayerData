@@ -17,7 +17,7 @@ namespace JanSharp
 
         public override LockstepGameStateOptionsData Clone()
         {
-            PlayerDataExportOptions clone = WannaBeClasses.New<PlayerDataExportOptions>(nameof(PlayerDataExportOptions));
+            PlayerDataExportOptions clone = wannaBeClasses.New<PlayerDataExportOptions>(nameof(PlayerDataExportOptions));
             clone.includeUnnecessaryPlayers = includeUnnecessaryPlayers;
             return clone;
         }
