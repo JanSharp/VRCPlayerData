@@ -200,10 +200,10 @@ namespace JanSharp
         public abstract CorePlayerData GetCorePlayerDataAt(int index);
         public abstract CorePlayerData GetCorePlayerDataForPlayerId(uint playerId);
         public abstract CorePlayerData GetCorePlayerDataForPersistentId(uint persistentId);
-        public abstract PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId);
-        public abstract PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId);
-        public abstract PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
-        public abstract PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
+        public abstract CustomPlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId);
+        public abstract CustomPlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId);
+        public abstract CustomPlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData);
+        public abstract CustomPlayerData[] GetAllPlayerDataDynamic(string playerDataClassName);
         /// <summary>
         /// </summary>
         /// <param name="playerId"></param>
@@ -337,37 +337,37 @@ namespace JanSharp
     {
         /// <inheritdoc cref="PlayerDataManagerAPI.GetPlayerDataClassNameIndexDynamic(string)"/>
         public static int GetPlayerDataClassNameIndex<T>(this PlayerDataManagerAPI manager, string playerDataClassName)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return manager.GetPlayerDataClassNameIndexDynamic(playerDataClassName);
         }
 
         public static void RegisterCustomPlayerData<T>(this PlayerDataManagerAPI manager, string playerDataClassName)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             manager.RegisterCustomPlayerDataDynamic(playerDataClassName);
         }
 
         public static T GetPlayerDataForPlayerId<T>(this PlayerDataManagerAPI manager, string playerDataClassName, uint playerId)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return (T)manager.GetPlayerDataForPlayerIdDynamic(playerDataClassName, playerId);
         }
 
         public static T GetPlayerDataForPersistentId<T>(this PlayerDataManagerAPI manager, string playerDataClassName, uint persistentId)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return (T)manager.GetPlayerDataForPersistentIdDynamic(playerDataClassName, persistentId);
         }
 
         public static T GetPlayerDataFromCore<T>(this PlayerDataManagerAPI manager, string playerDataClassName, CorePlayerData corePlayerData)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return (T)manager.GetPlayerDataFromCoreDynamic(playerDataClassName, corePlayerData);
         }
 
         public static T[] GetAllPlayerData<T>(this PlayerDataManagerAPI manager, string playerDataClassName)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return (T[])manager.GetAllPlayerDataDynamic(playerDataClassName);
         }

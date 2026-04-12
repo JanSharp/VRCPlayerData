@@ -3,7 +3,7 @@
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public abstract class PlayerData : SerializableWannaBeClass
+    public abstract class CustomPlayerData : SerializableWannaBeClass
     {
         [System.NonSerialized] public CorePlayerData core;
 
@@ -17,8 +17,8 @@ namespace JanSharp
         /// offline player data would potentially be deleted, regardless of the offline state at export
         /// time.</para>
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
-        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
-        /// actually not persist.</para>
+        /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
+        /// to actually not persist.</para>
         /// </summary>
         /// <returns></returns>
         public abstract bool PersistPlayerDataWhileOffline();
@@ -27,19 +27,19 @@ namespace JanSharp
         /// <para>Only called on player data that has been newly created through the import that has just
         /// happened. Any player data which has already existed beforehand is not going to get deleted.</para>
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
-        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
-        /// actually not persist.</para>
+        /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
+        /// to actually not persist.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
         /// <summary>
-        /// <para>Called in player data game state serialization for exports, only on <see cref="PlayerData"/>
-        /// where <see cref="SerializableWannaBeClass.SupportsImportExport"/> is
-        /// <see langword="true"/>.</para>
+        /// <para>Called in player data game state serialization for exports, only on
+        /// <see cref="CustomPlayerData"/> where <see cref="SerializableWannaBeClass.SupportsImportExport"/>
+        /// is <see langword="true"/>.</para>
         /// <para>Called regardless of <see cref="CorePlayerData.isOffline"/>.</para>
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
-        /// <see cref="PlayerData"/> must agree that some player's data does not need to persist for it to
-        /// actually not persist.</para>
+        /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
+        /// to actually not persist.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataInExport() => PersistPlayerDataWhileOffline();
@@ -50,14 +50,14 @@ namespace JanSharp
         /// <para>Called on all player data which existed before the import already but was not part of the
         /// imported data.</para>
         /// <para>For context said player data is all player data on any <see cref="CorePlayerData"/> which
-        /// was not part of the imported data at all, as well as any custom <see cref="PlayerData"/> where
-        /// said custom data was not included or could not be imported due to data version in the imported
-        /// data.</para>
+        /// was not part of the imported data at all, as well as any custom <see cref="CustomPlayerData"/>
+        /// where said custom data was not included or could not be imported due to data version in the
+        /// imported data.</para>
         /// </summary>
         public virtual void OnNotPartOfImportedData() { }
         /// <summary>
         /// <para><see cref="CorePlayerData.isOffline"/> can be <see langword="true"/> already.</para>
-        /// <para>Which other <see cref="PlayerData"/> for this player has already been created and
+        /// <para>Which other <see cref="CustomPlayerData"/> for this player has already been created and
         /// initialized is undefined, assume all of it to be <see langword="null"/>.</para>
         /// <para>For systems requiring cross player data interaction, use the
         /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/>,

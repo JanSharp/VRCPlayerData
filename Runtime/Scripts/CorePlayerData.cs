@@ -79,9 +79,9 @@ namespace JanSharp
         /// </summary>
         public bool IsOvershadowing => firstOvershadowedPlayerData != null;
 
-        [System.NonSerialized] public PlayerData[] customPlayerData;
+        [System.NonSerialized] public CustomPlayerData[] customPlayerData;
 
-        public PlayerData GetPlayerDataDynamic(string playerDataClassName)
+        public CustomPlayerData GetPlayerDataDynamic(string playerDataClassName)
         {
             return manager.GetPlayerDataFromCoreDynamic(playerDataClassName, this);
         }
@@ -90,7 +90,7 @@ namespace JanSharp
     public static class CorePlayerDataExtensions
     {
         public static T GetPlayerData<T>(this CorePlayerData corePlayerData, string playerDataClassName)
-            where T : PlayerData
+            where T : CustomPlayerData
         {
             return (T)corePlayerData.manager.GetPlayerDataFromCoreDynamic(playerDataClassName, corePlayerData);
         }

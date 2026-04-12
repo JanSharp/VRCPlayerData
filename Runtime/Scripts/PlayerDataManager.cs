@@ -151,7 +151,7 @@ namespace JanSharp.Internal
             if (internalNameLutIndex < 0)
             {
                 Debug.LogError($"[PlayerData] Attempt to register a custom player data class with the name "
-                    + $"{playerDataClassName}, however there is no such class which derives from the {nameof(PlayerData)} class.");
+                    + $"{playerDataClassName}, however there is no such class which derives from the {nameof(CustomPlayerData)} class.");
                 return;
             }
             string internalName = internalNameByClassNameValues[internalNameLutIndex];
@@ -204,7 +204,7 @@ namespace JanSharp.Internal
             return (CorePlayerData)playerDataByPersistentId[persistentId].Reference;
         }
 
-        public override PlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
+        public override CustomPlayerData GetPlayerDataForPlayerIdDynamic(string playerDataClassName, uint playerId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPlayerIdDynamic - playerDataClassName: {playerDataClassName}, playerId: {playerId}");
@@ -214,7 +214,7 @@ namespace JanSharp.Internal
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public override PlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
+        public override CustomPlayerData GetPlayerDataForPersistentIdDynamic(string playerDataClassName, uint persistentId)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataForPersistentIdDynamic - playerDataClassName: {playerDataClassName}, persistentId: {persistentId}");
@@ -224,7 +224,7 @@ namespace JanSharp.Internal
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public override PlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
+        public override CustomPlayerData GetPlayerDataFromCoreDynamic(string playerDataClassName, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetPlayerDataFromCoreDynamic - playerDataClassName: {playerDataClassName}, corePlayerData != null: {corePlayerData != null}");
@@ -233,13 +233,13 @@ namespace JanSharp.Internal
             return corePlayerData.customPlayerData[classIndex];
         }
 
-        public override PlayerData[] GetAllPlayerDataDynamic(string playerDataClassName)
+        public override CustomPlayerData[] GetAllPlayerDataDynamic(string playerDataClassName)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetAllPlayerDataDynamic - playerDataClassName: {playerDataClassName}");
 #endif
             int classIndex = ArrList.BinarySearch(ref playerDataClassNames, ref playerDataClassNamesCount, playerDataClassName);
-            PlayerData[] result = new PlayerData[allPlayerDataCount];
+            CustomPlayerData[] result = new CustomPlayerData[allPlayerDataCount];
             for (int i = 0; i < allPlayerDataCount; i++)
                 result[i] = allPlayerData[i].customPlayerData[classIndex];
             return result;
@@ -406,12 +406,12 @@ namespace JanSharp.Internal
             }
         }
 
-        private PlayerData NewPlayerData(string className, CorePlayerData corePlayerData)
+        private CustomPlayerData NewPlayerData(string className, CorePlayerData corePlayerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  NewPlayerData");
 #endif
-            PlayerData playerData = (PlayerData)wannaBeClasses.NewDynamic(className);
+            CustomPlayerData playerData = (CustomPlayerData)wannaBeClasses.NewDynamic(className);
             playerData.core = corePlayerData;
             return playerData;
         }
@@ -424,7 +424,7 @@ namespace JanSharp.Internal
             CorePlayerData corePlayerData = wannaBeClasses.New<CorePlayerData>(nameof(CorePlayerData));
             corePlayerData.persistentId = nextPersistentId++;
             corePlayerData.displayName = displayName;
-            PlayerData[] customPlayerData = new PlayerData[playerDataClassNamesCount];
+            CustomPlayerData[] customPlayerData = new CustomPlayerData[playerDataClassNamesCount];
             corePlayerData.customPlayerData = customPlayerData;
             corePlayerData.index = allPlayerDataCount;
             ArrList.Add(ref allPlayerData, ref allPlayerDataCount, corePlayerData);
@@ -463,10 +463,10 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CreatePlayerDataForNewCorePlayerData");
 #endif
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
-                PlayerData playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
+                CustomPlayerData playerData = NewPlayerData(playerDataClassNames[i], corePlayerData);
                 customPlayerData[i] = playerData;
                 playerData.OnPlayerDataInit(isAboutToBeImported: false);
             }
@@ -540,7 +540,7 @@ namespace JanSharp.Internal
                     + "rejoining player logic for itself, that happens in OnPreClientJoined "
                     + "which runs on every client but the local client.");
             playerDataByPlayerId.Add(playerId, corePlayerData);
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
                 customPlayerData[i].OnPlayerDataRejoin();
             RaiseOnPlayerDataWentOnline(corePlayerData);
@@ -622,10 +622,10 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - force: {force}");
 #endif
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
             {
-                PlayerData playerData = customPlayerData[i];
+                CustomPlayerData playerData = customPlayerData[i];
                 playerData.OnPlayerDataUninit(force);
                 playerData.DecrementRefsCount();
                 customPlayerData[i] = null;
@@ -637,7 +637,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  UninitOrPersistPlayerData");
 #endif
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
                 if (customPlayerData[i].PersistPlayerDataWhileOffline())
                 {
@@ -837,10 +837,10 @@ namespace JanSharp.Internal
                 corePlayerData.lastOvershadowedPlayerData = allPlayerData[lockstep.ReadSmallUInt()];
             }
 
-            corePlayerData.customPlayerData = new PlayerData[playerDataClassNamesCount];
+            corePlayerData.customPlayerData = new CustomPlayerData[playerDataClassNamesCount];
         }
 
-        private void SerializeCustomPlayerData(PlayerData playerData)
+        private void SerializeCustomPlayerData(CustomPlayerData playerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  SerializeCustomPlayerData");
@@ -853,8 +853,8 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  DeserializeCustomPlayerData");
 #endif
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-            PlayerData playerData = customPlayerData[classNameIndex];
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData playerData = customPlayerData[classNameIndex];
             if (playerData == null)
             {
                 // Doesn't unconditionally create a new one as this might be a continuation from prev frame.
@@ -869,7 +869,7 @@ namespace JanSharp.Internal
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  SerializeAllCustomPlayerData");
 #endif
-            PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
             {
                 if (DeSerializationIsRunningLong())
@@ -1023,10 +1023,10 @@ namespace JanSharp.Internal
                     suspendedIndexInCorePlayerDataArray++;
                     continue;
                 }
-                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
                 for (int i = 0; i < playerDataClassNamesCount; i++)
                 {
-                    PlayerData data = customPlayerData[i];
+                    CustomPlayerData data = customPlayerData[i];
                     if (data.SupportsImportExport && data.PersistPlayerDataInExport())
                     {
 #if PLAYER_DATA_DEBUG
@@ -1041,7 +1041,7 @@ namespace JanSharp.Internal
             suspendedIndexInCorePlayerDataArray = 0;
         }
 
-        private uint CountPlayerDataSupportingExport(PlayerData[] customPlayerData)
+        private uint CountPlayerDataSupportingExport(CustomPlayerData[] customPlayerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  CountPlayerDataSupportingExport");
@@ -1053,7 +1053,7 @@ namespace JanSharp.Internal
             return toExportCount;
         }
 
-        private void ExportCustomPlayerDataMetadata(PlayerData playerData)
+        private void ExportCustomPlayerDataMetadata(CustomPlayerData playerData)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  ExportCustomPlayerDataMetadata");
@@ -1128,7 +1128,7 @@ namespace JanSharp.Internal
                     return;
                 }
                 CorePlayerData corePlayerData = playerDataToExport[suspendedIndexInCorePlayerDataArray];
-                PlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
+                CustomPlayerData playerData = corePlayerData.customPlayerData[classNameIndex];
                 playerData.Serialize(isExport: true);
                 if (lockstep.FlaggedToContinueNextFrame)
                 {
@@ -1156,7 +1156,7 @@ namespace JanSharp.Internal
                 if (importSuspendedClassNameIndex == -1)
                     return false;
 
-                PlayerData dummyPlayerData = GetDummyCustomPlayerData()[importSuspendedClassNameIndex];
+                CustomPlayerData dummyPlayerData = GetDummyCustomPlayerData()[importSuspendedClassNameIndex];
 #if PLAYER_DATA_DEBUG
                 Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData (inner) - SupportsImportExport: {dummyPlayerData.SupportsImportExport}, LowestSupportedDataVersion: {dummyPlayerData.LowestSupportedDataVersion}, importSuspendedDataVersion: {importSuspendedDataVersion}");
 #endif
@@ -1176,8 +1176,8 @@ namespace JanSharp.Internal
                     return false; // Return value does not matter.
                 }
                 CorePlayerData corePlayerData = allImportedPlayerData[suspendedIndexInCorePlayerDataArray];
-                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-                PlayerData playerData = customPlayerData[importSuspendedClassNameIndex];
+                CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                CustomPlayerData playerData = customPlayerData[importSuspendedClassNameIndex];
 #if PLAYER_DATA_DEBUG
                 Debug.Log($"[PlayerDataDebug] Manager  TryImportAllCustomPlayerData (inner) - corePlayerData.displayName: {corePlayerData.displayName}");
 #endif
@@ -1227,8 +1227,8 @@ namespace JanSharp.Internal
                 if (DeSerializationIsRunningLong())
                     return;
                 CorePlayerData corePlayerData = newlyCreatedImportedPlayerData[suspendedIndexInCorePlayerDataArray];
-                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
-                PlayerData playerData = customPlayerData[classNameIndex];
+                CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                CustomPlayerData playerData = customPlayerData[classNameIndex];
                 if (playerData == null)
                 {
                     playerData = NewPlayerData(playerDataClassNames[classNameIndex], corePlayerData);
@@ -1240,7 +1240,7 @@ namespace JanSharp.Internal
             suspendedIndexInCorePlayerDataArray = 0;
         }
 
-        private PlayerData[] GetDummyCustomPlayerData()
+        private CustomPlayerData[] GetDummyCustomPlayerData()
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  GetDummyCustomPlayerData");
@@ -1293,19 +1293,19 @@ namespace JanSharp.Internal
 
             if (exportStage == 4)
             {
-                PlayerData[] customPlayerData = GetDummyCustomPlayerData();
+                CustomPlayerData[] customPlayerData = GetDummyCustomPlayerData();
                 lockstep.WriteSmallUInt(CountPlayerDataSupportingExport(customPlayerData));
                 exportStage++;
             }
 
             if (exportStage == 5)
             {
-                PlayerData[] customPlayerData = GetDummyCustomPlayerData();
+                CustomPlayerData[] customPlayerData = GetDummyCustomPlayerData();
                 while (suspendedIndexInCustomPlayerDataArray < playerDataClassNamesCount)
                 {
                     if (DeSerializationIsRunningLong())
                         return;
-                    PlayerData playerData = customPlayerData[suspendedIndexInCustomPlayerDataArray];
+                    CustomPlayerData playerData = customPlayerData[suspendedIndexInCustomPlayerDataArray];
                     if (!playerData.SupportsImportExport)
                     {
                         suspendedIndexInCustomPlayerDataArray++;
@@ -1439,7 +1439,7 @@ namespace JanSharp.Internal
                     CorePlayerData player = allPlayerData[suspendedIndexInCorePlayerDataArray];
                     if (player.importedPersistentId != InvalidPersistentId)
                     {
-                        PlayerData[] customPlayerData = player.customPlayerData;
+                        CustomPlayerData[] customPlayerData = player.customPlayerData;
                         for (int i = 0; i < playerDataClassNamesCount; i++)
                             if (!importSuspendedPresentClassNames[i])
                                 customPlayerData[i].OnNotPartOfImportedData();
@@ -1449,7 +1449,7 @@ namespace JanSharp.Internal
                         // Part of imported data and existed before import already.
                         // Player data which didn't exist before already got newly created, newly initialized,
                         // see ImportPopulateMissingCustomPlayerData. Those should not receive OnNotPartOfImportedData.
-                        PlayerData[] customPlayerData = player.customPlayerData;
+                        CustomPlayerData[] customPlayerData = player.customPlayerData;
                         for (int i = 0; i < playerDataClassNamesCount; i++)
                             customPlayerData[i].OnNotPartOfImportedData();
                     }
@@ -1508,7 +1508,7 @@ namespace JanSharp.Internal
             for (int i = newlyCreatedImportedPlayerDataCount - 1; i >= 0; i--)
             {
                 CorePlayerData corePlayerData = newlyCreatedImportedPlayerData[i];
-                PlayerData[] customPlayerData = corePlayerData.customPlayerData;
+                CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
                 bool doKeep = false;
                 for (int j = 0; j < playerDataClassNamesCount; j++)
                     if (customPlayerData[j].PersistPlayerDataPostImportWhileOffline())

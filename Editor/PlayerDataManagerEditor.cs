@@ -8,15 +8,15 @@ namespace JanSharp
     [InitializeOnLoad]
     public static class PlayerDataManagerOnBuild
     {
-        private static List<PlayerData> allPlayerData = new();
+        private static List<CustomPlayerData> allPlayerData = new();
 
         static PlayerDataManagerOnBuild()
         {
-            OnBuildUtil.RegisterTypeCumulative<PlayerData>(OnPlayerDataBuild, order: -10);
+            OnBuildUtil.RegisterTypeCumulative<CustomPlayerData>(OnPlayerDataBuild, order: -10);
             OnBuildUtil.RegisterType<PlayerDataManager>(OnBuild, order: -5);
         }
 
-        private static bool OnPlayerDataBuild(IEnumerable<PlayerData> allPlayerData)
+        private static bool OnPlayerDataBuild(IEnumerable<CustomPlayerData> allPlayerData)
         {
             // There is always an instance of each PlayerData class in the scene due to how WannaBeClasses work.
             PlayerDataManagerOnBuild.allPlayerData.Clear();

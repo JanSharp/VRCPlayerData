@@ -3,7 +3,7 @@
 namespace JanSharp
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
-    public class PlayerHealthAndExpData : PlayerData
+    public class PlayerHealthAndExpData : CustomPlayerData
     {
         public override string PlayerDataInternalName => "jansharp.player-health-and-exp-data";
         public override string PlayerDataDisplayName => "Player Health And Experience Data";

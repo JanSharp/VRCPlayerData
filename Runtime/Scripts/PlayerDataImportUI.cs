@@ -109,7 +109,7 @@ namespace JanSharp.Internal
             anyWarnings = false;
 
             object[][] importedMetadata = ReadImportedMetadata(out DataDictionary importedMetadataByInternalName);
-            PlayerData[] customPlayerData = playerDataManager.LocalPlayerData.customPlayerData;
+            CustomPlayerData[] customPlayerData = playerDataManager.LocalPlayerData.customPlayerData;
             hasAnyCustomPlayerData = customPlayerData.Length != 0 || importedMetadata.Length != 0;
             if (!hasAnyCustomPlayerData)
                 return;
@@ -118,7 +118,7 @@ namespace JanSharp.Internal
             sb.Append("<size=80%>");
             bool isFirstLine = true;
 
-            foreach (PlayerData playerData in customPlayerData)
+            foreach (CustomPlayerData playerData in customPlayerData)
             {
                 if (isFirstLine)
                     isFirstLine = false;
