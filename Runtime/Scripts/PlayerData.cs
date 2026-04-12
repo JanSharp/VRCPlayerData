@@ -77,7 +77,8 @@ namespace JanSharp
         /// <para><see langword="true"/> when the deletion is bypassing the
         /// <see cref="PersistPlayerDataWhileOffline"/> check, therefore happening unconditionally.</para>
         /// <para>This happens when this player left the world instance while this player is either
-        /// <see cref="CorePlayerData.IsOvershadowed"/> or <see cref="CorePlayerData.IsOvershadowing"/>, </para>
+        /// <see cref="CorePlayerData.IsOvershadowed"/> or
+        /// <see cref="CorePlayerData.IsOvershadowing"/>.</para>
         /// <para>Also <see langword="true"/> when this data is getting deleted through an API call to delete
         /// offline player data, which is to say that this player data
         /// <see cref="CorePlayerData.isOffline"/>.</para>
