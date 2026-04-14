@@ -10,6 +10,13 @@ namespace JanSharp
         public abstract string PlayerDataInternalName { get; }
         public abstract string PlayerDataDisplayName { get; }
 
+        // public override bool WannaBeClassSupportsPooling => true; // Up to the deriving class.
+        public override void ResetWannaBeClassToDefault()
+        {
+            base.ResetWannaBeClassToDefault();
+            core = default;
+        }
+
         /// <summary>
         /// <para>When <see cref="PersistPlayerDataInExport"/> is not overridden separately,
         /// <see cref="CorePlayerData.isOffline"/> can actually be <see langword="false"/> inside of this

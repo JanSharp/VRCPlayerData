@@ -81,6 +81,26 @@ namespace JanSharp
 
         [System.NonSerialized] public CustomPlayerData[] customPlayerData;
 
+        public override bool WannaBeClassSupportsPooling => true;
+        public override void ResetWannaBeClassToDefault()
+        {
+            index = default;
+            persistentId = default;
+            importedPersistentId = default;
+            playerId = default;
+            playerApi = default;
+            displayName = default;
+            isOffline = default;
+            isDeleted = default;
+            isLocal = default;
+            overshadowingPlayerData = default;
+            nextOvershadowedPlayerData = default;
+            prevOvershadowedPlayerData = default;
+            firstOvershadowedPlayerData = default;
+            lastOvershadowedPlayerData = default;
+            customPlayerData = default;
+        }
+
         public CustomPlayerData GetPlayerDataDynamic(string playerDataClassName)
         {
             return manager.GetPlayerDataFromCoreDynamic(playerDataClassName, this);

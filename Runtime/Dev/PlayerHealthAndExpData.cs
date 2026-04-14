@@ -17,6 +17,15 @@ namespace JanSharp
 
         public const uint MaxHealth = 100u;
 
+        public override bool WannaBeClassSupportsPooling => true;
+        public override void ResetWannaBeClassToDefault()
+        {
+            base.ResetWannaBeClassToDefault();
+            health = MaxHealth;
+            exp = 0u;
+            hitBox = default;
+        }
+
         public override bool PersistPlayerDataWhileOffline()
         {
             return health != MaxHealth || exp != 0u;

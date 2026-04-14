@@ -15,6 +15,13 @@ namespace JanSharp
         /// </summary>
         [System.NonSerialized] public bool includeUnnecessaryPlayers = false;
 
+        public override bool WannaBeClassSupportsPooling => true;
+        public override void ResetWannaBeClassToDefault()
+        {
+            base.ResetWannaBeClassToDefault();
+            includeUnnecessaryPlayers = false;
+        }
+
         public override LockstepGameStateOptionsData Clone()
         {
             PlayerDataExportOptions clone = wannaBeClasses.New<PlayerDataExportOptions>(nameof(PlayerDataExportOptions));
