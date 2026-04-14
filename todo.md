@@ -23,3 +23,5 @@
 - [x] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
   - [x] add export option
 - [x] use max work ms per frame from lockstep API
+- [ ] clearly state that by the time the player data deleted event runs all custom player data has been uninitialized
+  - [ ] go through all usages of that event and make sure nothing is using deleted custom player data instances. Anything that is should be holding strong references rather than weak
