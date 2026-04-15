@@ -43,6 +43,7 @@ namespace JanSharp
 
         /// <summary>
         /// <para>The player overshadowing this player.</para>
+        /// <para>Weak <see cref="WannaBeClass"/> reference.</para>
         /// </summary>
         [System.NonSerialized] public CorePlayerData overshadowingPlayerData;
         /// <summary>
@@ -55,6 +56,7 @@ namespace JanSharp
         /// <para>Used when <see cref="IsOvershadowed"/> is <see langword="true"/>.</para>
         /// <para>A non circular linked list of players overshadowed by
         /// <see cref="overshadowingPlayerData"/>.</para>
+        /// <para>Weak <see cref="WannaBeClass"/> reference.</para>
         /// </summary>
         [System.NonSerialized] public CorePlayerData nextOvershadowedPlayerData;
         /// <inheritdoc cref="nextOvershadowedPlayerData"/>
@@ -64,12 +66,14 @@ namespace JanSharp
         /// <para>The first player overshadowed by this player.</para>
         /// <para>Use <see cref="nextOvershadowedPlayerData"/> on that player to walk through the linked list
         /// of players overshadowed by this player data.</para>
+        /// <para>Weak <see cref="WannaBeClass"/> reference.</para>
         /// </summary>
         [System.NonSerialized] public CorePlayerData firstOvershadowedPlayerData;
         /// <summary>
         /// <para>The last player overshadowed by this player.</para>
         /// <para>Use <see cref="prevOvershadowedPlayerData"/> on that player to walk through the linked list
         /// of players overshadowed by this player data.</para>
+        /// <para>Weak <see cref="WannaBeClass"/> reference.</para>
         /// </summary>
         [System.NonSerialized] public CorePlayerData lastOvershadowedPlayerData;
         /// <summary>
@@ -79,6 +83,9 @@ namespace JanSharp
         /// </summary>
         public bool IsOvershadowing => firstOvershadowedPlayerData != null;
 
+        /// <summary>
+        /// <para>Strong <see cref="WannaBeClass"/> references.</para>
+        /// </summary>
         [System.NonSerialized] public CustomPlayerData[] customPlayerData;
 
         public override bool WannaBeClassSupportsPooling => true;
@@ -99,6 +106,13 @@ namespace JanSharp
             firstOvershadowedPlayerData = default;
             lastOvershadowedPlayerData = default;
             customPlayerData = default;
+        }
+
+        public override void WannaBeDestructor()
+        {
+            if (customPlayerData != null)
+                foreach (CustomPlayerData playerData in customPlayerData)
+                    playerData.DecrementRefsCount();
         }
 
         public CustomPlayerData GetPlayerDataDynamic(string playerDataClassName)

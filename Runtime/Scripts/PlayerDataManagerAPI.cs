@@ -73,6 +73,18 @@ namespace JanSharp
         /// <summary>
         /// <para>Use <see cref="PlayerDataManagerAPI.PlayerDataForEvent"/> to get the player data which has
         /// been deleted.</para>
+        /// <para>At this point in time all <see cref="CustomPlayerData"/> for the given player have not
+        /// received the <see cref="CustomPlayerData.OnPlayerDataUninit(bool)"/> event yet.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
+        OnPrePlayerDataDeleted,
+        /// <summary>
+        /// <para>Use <see cref="PlayerDataManagerAPI.PlayerDataForEvent"/> to get the player data which has
+        /// been deleted.</para>
+        /// <para>At this point in time all <see cref="CustomPlayerData"/> for the given player has received
+        /// the <see cref="CustomPlayerData.OnPlayerDataUninit(bool)"/> event.</para>
+        /// <para>The <see cref="CorePlayerData.customPlayerData"/> array is still populated however and the
+        /// <see cref="CustomPlayerData"/> instances have not yet been deleted.</para>
         /// <para>Game state safe.</para>
         /// </summary>
         OnPlayerDataDeleted,

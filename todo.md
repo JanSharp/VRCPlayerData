@@ -23,5 +23,5 @@
 - [x] add an "include redundant player data" option, both import and export. Export needs more work, import is easy to implement for this
   - [x] add export option
 - [x] use max work ms per frame from lockstep API
-- [ ] clearly state that by the time the player data deleted event runs all custom player data has been uninitialized
-  - [ ] go through all usages of that event and make sure nothing is using deleted custom player data instances. Anything that is should be holding strong references rather than weak
+- [x] ~~clearly state that by the time the player data deleted event runs all custom player data has been uninitialized~~ No, never mind that, it is annoying. The introduction of a pre delete event solves this more elegantly, however not only that, there was no reason for custom player data instances to get deleted during the uninitialize process, just do it in the destructor of the core player data and in doing so custom player data remains available inside of the delete event
+  - [x] ~~go through all usages of that event and make sure nothing is using deleted custom player data instances. Anything that is should be holding strong references rather than weak~~

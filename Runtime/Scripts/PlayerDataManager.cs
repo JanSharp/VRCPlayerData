@@ -369,7 +369,7 @@ namespace JanSharp.Internal
 #endif
             if (!isInitialized || !corePlayerData.isOffline)
                 return; // There cannot be any offline player data while isInitialized is false anyway.
-            UninitAllPlayerData(corePlayerData, force: true);
+            UninitAllPlayerData(corePlayerData, force: true, doRaiseEvent: true);
             DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
@@ -600,11 +600,11 @@ namespace JanSharp.Internal
                 // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
                 // Same for when a player was overshadowing another player, as the other player becomes no
                 // longer overshadowed, thus taking the the leaving player's place in playerDataByName.
-                UninitAllPlayerData(corePlayerData, force: true);
+                UninitAllPlayerData(corePlayerData, force: true, doRaiseEvent: true);
             }
             else
             {
-                bool shouldPersist = UninitOrPersistPlayerData(corePlayerData);
+                bool shouldPersist = UninitOrPersistPlayerData(corePlayerData, doRaiseEvent: true);
                 if (shouldPersist)
                 {
                     corePlayerData.isOffline = true;
@@ -617,22 +617,19 @@ namespace JanSharp.Internal
             DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
-        private void UninitAllPlayerData(CorePlayerData corePlayerData, bool force)
+        private void UninitAllPlayerData(CorePlayerData corePlayerData, bool force, bool doRaiseEvent)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - force: {force}");
+            Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - force: {force}, doRaiseEvent: {doRaiseEvent}");
 #endif
+            if (doRaiseEvent)
+                RaiseOnPrePlayerDataDeleted(corePlayerData);
             CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
-            {
-                CustomPlayerData playerData = customPlayerData[i];
-                playerData.OnPlayerDataUninit(force);
-                playerData.DecrementRefsCount();
-                customPlayerData[i] = null;
-            }
+                customPlayerData[i].OnPlayerDataUninit(force);
         }
 
-        private bool UninitOrPersistPlayerData(CorePlayerData corePlayerData)
+        private bool UninitOrPersistPlayerData(CorePlayerData corePlayerData, bool doRaiseEvent)
         {
 #if PLAYER_DATA_DEBUG
             Debug.Log($"[PlayerDataDebug] Manager  UninitOrPersistPlayerData");
@@ -646,7 +643,7 @@ namespace JanSharp.Internal
                     return true;
                 }
 
-            UninitAllPlayerData(corePlayerData, force: false);
+            UninitAllPlayerData(corePlayerData, force: false, doRaiseEvent);
             return false;
         }
 
@@ -1518,7 +1515,7 @@ namespace JanSharp.Internal
                     }
                 if (doKeep)
                     continue;
-                UninitAllPlayerData(corePlayerData, force: false);
+                UninitAllPlayerData(corePlayerData, force: false, doRaiseEvent: false);
                 DeleteCorePlayerData(corePlayerData, doRaiseEvent: false);
             }
         }
@@ -1607,6 +1604,7 @@ namespace JanSharp.Internal
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPrePlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPostPlayerDataManagerInitListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataCreatedListeners;
+        [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPrePlayerDataDeletedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataDeletedListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataWentOfflineListeners;
         [HideInInspector][SerializeField] private UdonSharpBehaviour[] onPlayerDataWentOnlineListeners;
@@ -1654,6 +1652,14 @@ namespace JanSharp.Internal
             playerDataForEvent = corePlayerData;
             // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
             JanSharp.CustomRaisedEvents.Raise(ref onPlayerDataCreatedListeners, nameof(PlayerDataEventType.OnPlayerDataCreated));
+            playerDataForEvent = null; // To prevent misuse of the API.
+        }
+
+        private void RaiseOnPrePlayerDataDeleted(CorePlayerData corePlayerData)
+        {
+            playerDataForEvent = corePlayerData;
+            // For some reason UdonSharp needs the 'JanSharp.' namespace name here to resolve the Raise function call.
+            JanSharp.CustomRaisedEvents.Raise(ref onPrePlayerDataDeletedListeners, nameof(PlayerDataEventType.OnPrePlayerDataDeleted));
             playerDataForEvent = null; // To prevent misuse of the API.
         }
 
