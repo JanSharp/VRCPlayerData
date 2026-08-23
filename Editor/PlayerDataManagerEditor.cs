@@ -5,12 +5,12 @@ using UnityEditor;
 
 namespace JanSharp
 {
-    [InitializeOnLoad]
     public static class PlayerDataManagerOnBuild
     {
         private static List<CustomPlayerData> allPlayerData = new();
 
-        static PlayerDataManagerOnBuild()
+        [OrderedInitializeOnLoad]
+        private static void OnAssemblyLoad()
         {
             OnBuildUtil.RegisterTypeCumulative<CustomPlayerData>(OnPlayerDataBuild, order: -10);
             OnBuildUtil.RegisterType<PlayerDataManager>(OnBuild, order: -5);
