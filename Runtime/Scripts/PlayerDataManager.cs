@@ -46,7 +46,7 @@ namespace JanSharp.Internal
         [HideInInspector][SerializeField] private string[] internalNameByClassNameValues;
 
         /// <summary>
-        /// <para><c>0u</c> (see <see cref="InvalidPersistentId"/>) is an invalid id.</para>
+        /// <para><c>0u</c> (<see cref="PlayerDataManagerAPI.InvalidPersistentId"/>) is an invalid id.</para>
         /// </summary>
         private uint nextPersistentId = 1u;
         /// <summary>
