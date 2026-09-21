@@ -33,11 +33,11 @@ namespace JanSharp
                 .OrderBy(d => d.className)
                 .ToList();
             EditorUtil.SetArrayProperty(
-                so.FindProperty("internalNameByClassNameKeys"),
+                so.FindProperty(PlayerDataManager.InternalNameByClassNameKeysPropName),
                 allAssociations,
                 (p, v) => p.stringValue = v.className);
             EditorUtil.SetArrayProperty(
-                so.FindProperty("internalNameByClassNameValues"),
+                so.FindProperty(PlayerDataManager.InternalNameByClassNameValuesPropName),
                 allAssociations,
                 (p, v) => p.stringValue = v.internalName);
             so.ApplyModifiedProperties();

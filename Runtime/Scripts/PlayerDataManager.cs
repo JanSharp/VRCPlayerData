@@ -44,6 +44,10 @@ namespace JanSharp.Internal
         /// <para>Values are internal names.</para>
         /// </summary>
         [HideInInspector][SerializeField] private string[] internalNameByClassNameValues;
+#if UNITY_EDITOR && !COMPILER_UDONSHARP
+        public const string InternalNameByClassNameKeysPropName = nameof(internalNameByClassNameKeys);
+        public const string InternalNameByClassNameValuesPropName = nameof(internalNameByClassNameValues);
+#endif
 
         /// <summary>
         /// <para><c>0u</c> (<see cref="PlayerDataManagerAPI.InvalidPersistentId"/>) is an invalid id.</para>
