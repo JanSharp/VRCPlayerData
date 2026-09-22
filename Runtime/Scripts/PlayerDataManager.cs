@@ -373,7 +373,7 @@ namespace JanSharp.Internal
 #endif
             if (!isInitialized || !corePlayerData.isOffline)
                 return; // There cannot be any offline player data while isInitialized is false anyway.
-            UninitAllPlayerData(corePlayerData, force: true, doRaiseEvent: true);
+            UninitAllPlayerData(corePlayerData, forced: true, doRaiseEvent: true);
             DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
@@ -604,7 +604,7 @@ namespace JanSharp.Internal
                 // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
                 // Same for when a player was overshadowing another player, as the other player becomes no
                 // longer overshadowed, thus taking the leaving player's place in playerDataByName.
-                UninitAllPlayerData(corePlayerData, force: true, doRaiseEvent: true);
+                UninitAllPlayerData(corePlayerData, forced: true, doRaiseEvent: true);
             }
             else
             {
@@ -621,16 +621,16 @@ namespace JanSharp.Internal
             DeleteCorePlayerData(corePlayerData, doRaiseEvent: true);
         }
 
-        private void UninitAllPlayerData(CorePlayerData corePlayerData, bool force, bool doRaiseEvent)
+        private void UninitAllPlayerData(CorePlayerData corePlayerData, bool forced, bool doRaiseEvent)
         {
 #if PLAYER_DATA_DEBUG
-            Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - force: {force}, doRaiseEvent: {doRaiseEvent}");
+            Debug.Log($"[PlayerDataDebug] Manager  UninitAllPlayerData - forced: {forced}, doRaiseEvent: {doRaiseEvent}");
 #endif
             if (doRaiseEvent)
                 RaiseOnPrePlayerDataDeleted(corePlayerData);
             CustomPlayerData[] customPlayerData = corePlayerData.customPlayerData;
             for (int i = 0; i < playerDataClassNamesCount; i++)
-                customPlayerData[i].OnPlayerDataUninit(force);
+                customPlayerData[i].OnPlayerDataUninit(forced);
         }
 
         private bool UninitOrPersistPlayerData(CorePlayerData corePlayerData, bool doRaiseEvent)
@@ -647,7 +647,7 @@ namespace JanSharp.Internal
                     return true;
                 }
 
-            UninitAllPlayerData(corePlayerData, force: false, doRaiseEvent);
+            UninitAllPlayerData(corePlayerData, forced: false, doRaiseEvent);
             return false;
         }
 
@@ -1519,7 +1519,7 @@ namespace JanSharp.Internal
                     }
                 if (doKeep)
                     continue;
-                UninitAllPlayerData(corePlayerData, force: false, doRaiseEvent: false);
+                UninitAllPlayerData(corePlayerData, forced: false, doRaiseEvent: false);
                 DeleteCorePlayerData(corePlayerData, doRaiseEvent: false);
             }
         }
