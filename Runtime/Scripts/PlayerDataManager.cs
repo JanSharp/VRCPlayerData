@@ -603,7 +603,7 @@ namespace JanSharp.Internal
             {
                 // Overshadowed player data cannot go offline, it does not exist in the playerDataByName lut.
                 // Same for when a player was overshadowing another player, as the other player becomes no
-                // longer overshadowed, thus taking the the leaving player's place in playerDataByName.
+                // longer overshadowed, thus taking the leaving player's place in playerDataByName.
                 UninitAllPlayerData(corePlayerData, force: true, doRaiseEvent: true);
             }
             else
