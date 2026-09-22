@@ -112,7 +112,10 @@ namespace JanSharp
         {
             if (customPlayerData != null)
                 foreach (CustomPlayerData playerData in customPlayerData)
+                {
                     playerData.DecrementRefsCount();
+                    playerData.core = null;
+                }
         }
 
         public CustomPlayerData GetPlayerDataDynamic(string playerDataClassName)
