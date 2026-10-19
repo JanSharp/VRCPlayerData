@@ -7,7 +7,18 @@ namespace JanSharp
     {
         [System.NonSerialized] public CorePlayerData core;
 
+        /// <summary>
+        /// <para>Must be a completely unique name for this player data. Anything can be used however it is
+        /// recommended to use <c>author-name.package-name</c>, everything lower case and using dashes instead
+        /// of white spaces. <c>author-name</c> should be self explanatory. <c>package-name</c> could be a
+        /// descriptive name for the system this player data is for.</para>
+        /// <para>When creating a package (vpm package most likely) this is effectively simply the package
+        /// name but without the <c>com.</c> prefix.</para>
+        /// </summary>
         public abstract string PlayerDataInternalName { get; }
+        /// <summary>
+        /// <para>A user readable and identifiable name for this player data.</para>
+        /// </summary>
         public abstract string PlayerDataDisplayName { get; }
 
         // public override bool WannaBeClassSupportsPooling => true; // Up to the deriving class.
@@ -26,16 +37,21 @@ namespace JanSharp
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
         /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
         /// to actually not persist.</para>
+        /// <para>Only game state safe if <see cref="PersistPlayerDataInExport"/> gets overridden separately,
+        /// as said function is not game state safe and calls <see cref="PersistPlayerDataWhileOffline"/> in
+        /// its default implementation.</para>
         /// </summary>
         /// <returns></returns>
         public abstract bool PersistPlayerDataWhileOffline();
         /// <summary>
-        /// <para>Called in <see cref="LockstepEventType.OnImportFinishingUp"/>.</para>
+        /// <para>Called in <see cref="LockstepEventType.OnImportFinishingUp"/> with an <c>Order</c> of
+        /// <c>-10000</c>.</para>
         /// <para>Only called on player data that has been newly created through the import that has just
         /// happened. Any player data which has already existed beforehand is not going to get deleted.</para>
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
         /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
         /// to actually not persist.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataPostImportWhileOffline() => PersistPlayerDataWhileOffline();
@@ -47,6 +63,7 @@ namespace JanSharp
         /// <para>Even if this returns <see langword="false"/> it may persist anyway. All custom
         /// <see cref="CustomPlayerData"/> must agree that some player's data does not need to persist for it
         /// to actually not persist.</para>
+        /// <para>Not game state safe.</para>
         /// </summary>
         /// <returns></returns>
         public virtual bool PersistPlayerDataInExport() => PersistPlayerDataWhileOffline();
@@ -60,12 +77,13 @@ namespace JanSharp
         /// was not part of the imported data at all, as well as any custom <see cref="CustomPlayerData"/>
         /// where said custom data was not included or could not be imported due to data version in the
         /// imported data.</para>
+        /// <para>Game state safe.</para>
         /// </summary>
         public virtual void OnNotPartOfImportedData() { }
         /// <summary>
         /// <para><see cref="CorePlayerData.isOffline"/> can be <see langword="true"/> already.</para>
-        /// <para>Which other <see cref="CustomPlayerData"/> for this player has already been created and
-        /// initialized is undefined, assume all of it to be <see langword="null"/>.</para>
+        /// <para>The order in which <see cref="CustomPlayerData"/> for this player gets created and
+        /// initialized is undefined, assume all of them to be <see langword="null"/>.</para>
         /// <para>For systems requiring cross player data interaction, use the
         /// <see cref="PlayerDataEventType.OnPlayerDataCreated"/>,
         /// <see cref="LockstepEventType.OnImportFinishingUp"/> or
@@ -91,7 +109,21 @@ namespace JanSharp
         /// <see langword="true"/>.</para>
         /// </param>
         public virtual void OnPlayerDataUninit(bool forced) { }
+        /// <summary>
+        /// <para>Raised inside of <see cref="LockstepEventType.OnClientLeft"/> with an <c>Order</c> of
+        /// <c>10000</c>.</para>
+        /// <para>This runs when a player left and their player data is being kept while they are
+        /// offline.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
         public virtual void OnPlayerDataLeft() { }
+        /// <summary>
+        /// <para>Raised inside of <see cref="LockstepEventType.OnPreClientJoined"/> with an <c>Order</c> of
+        /// <c>-10000</c>.</para>
+        /// <para>This runs when a player joined and there was already offline player data for this joining
+        /// player present.</para>
+        /// <para>Game state safe.</para>
+        /// </summary>
         public virtual void OnPlayerDataRejoin() { }
     }
 }

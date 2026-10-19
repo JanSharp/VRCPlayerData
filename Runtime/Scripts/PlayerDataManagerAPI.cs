@@ -202,6 +202,9 @@ namespace JanSharp
         /// <para>Game state safe, including order.</para>
         /// </summary>
         public abstract CorePlayerData[] AllCorePlayerDataRaw { get; }
+        /// <summary>
+        /// <para>Game state safe.</para>
+        /// </summary>
         public abstract int AllCorePlayerDataCount { get; }
         /// <summary>
         /// <para>Creates a new array with the length of <see cref="AllCorePlayerDataCount"/> every time the
