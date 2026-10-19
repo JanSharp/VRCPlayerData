@@ -1,6 +1,6 @@
 {
   "name": "com.jansharp.player-data",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A library for systems to keep track of player associated data.",
   "displayName": "Player Data",
   "unity": "2022.3",
@@ -16,6 +16,6 @@
     "com.jansharp.common": ">=1.4.0",
     "com.jansharp.lockstep": ">=1.1.0"
   },
-  "url": "https://github.com/JanSharp/VRCPlayerData/releases/download/v0.1.0/com.jansharp.player-data.zip",
-  "changelogUrl": "https://github.com/JanSharp/VRCPlayerData/blob/v0.1.0/CHANGELOG.md"
+  "url": "https://github.com/JanSharp/VRCPlayerData/releases/download/v1.0.0/com.jansharp.player-data.zip",
+  "changelogUrl": "https://github.com/JanSharp/VRCPlayerData/blob/v1.0.0/CHANGELOG.md"
 }
