@@ -22,6 +22,13 @@ namespace JanSharp
         /// <para>Game state safe.</para>
         /// </summary>
         [System.NonSerialized] public uint playerId;
+        /// <summary>
+        /// <para>Can be <see langword="null"/> even for online players, such as when a player leaves, because
+        /// the game state does not (cannot) instantly respond to a player leaving. A left player will be
+        /// considered still online for a short moment of time, however this is <see langword="null"/> at that
+        /// point already.</para>
+        /// <para>Not game state safe.</para>
+        /// </summary>
         [System.NonSerialized] public VRCPlayerApi playerApi;
         /// <summary>
         /// <para>Never <see langword="null"/>.</para>
